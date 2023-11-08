@@ -1,4 +1,4 @@
-# modeling extractor efficiency with plotting mechanism 
+# modeling extractor efficiency
 
 import festim as F
 import matplotlib.pyplot as plt
@@ -17,8 +17,7 @@ bottom_id = 4
 id_fluid = 5
 id_pipe_walls = 6
 
-temperature = 1200
-# temperature = input('temperature = ')
+temperature = 500
 
 # Read mesh file
 my_model.mesh = F.MeshFromXDMF(
@@ -108,32 +107,41 @@ print(my_model.h_transport_problem.F)
 
 from fenics import inner, dot, grad
 
-my_model.initialise()  # reinitialisation is needed
+# my_model.initialise()  # reinitialisation is needed
 
-(
-    hydrogen_concentration,
-    _,
-) = my_model.h_transport_problem.mobile.get_concentration_for_a_given_material(
-    lipb, my_model.T
-)
-test_function_mobile = my_model.h_transport_problem.mobile.test_function
+# (
+#     hydrogen_concentration,
+#     _,
+# ) = my_model.h_transport_problem.mobile.get_concentration_for_a_given_material(
+#     lipb, my_model.T
+# )
+# test_function_mobile = my_model.h_transport_problem.mobile.test_function
 
-advection_term = inner(
-    dot(grad(hydrogen_concentration), u), test_function_mobile
-) * my_model.mesh.dx(id_fluid)
+# advection_term = inner(
+#     dot(grad(hydrogen_concentration), u), test_function_mobile
+# ) * my_model.mesh.dx(id_fluid)
 
-my_model.h_transport_problem.F += advection_term
+# my_model.h_transport_problem.F += advection_term
 # print(my_model.h_transport_problem.F)
 
 eff_lst = []
 
 # my_model.run()
-for k in range(0,9):
+
+for k in range(0,2):
     subprocess.run(['python', 'mesh.py'])
-    for i in range(500, 1200, 350):
-        my_model.T = F.Temperature(i)
+    for i in range(2):
+        temperature += 100
+        my_model.T = F.Temperature(temperature)
         my_model.initialise()
+        # advection
+        hydrogen_concentration, _ = my_model.h_transport_problem.mobile.get_concentration_for_a_given_material(lipb, my_model.T)
+        test_function_mobile = my_model.h_transport_problem.mobile.test_function
+        advection_term = inner(dot(grad(hydrogen_concentration), u), test_function_mobile) * my_model.mesh.dx(id_fluid)
+        my_model.h_transport_problem.F += advection_term
+
         my_model.run()
+        #efficiency 
         c_out_value = c_out.data[0]
         c_in_value = c_in.data[0]
         n = 1 - c_out_value / c_in_value
@@ -163,4 +171,3 @@ XDMFFile("mobile_conc_with_advection.xdmf").write(post_processing_mobile_conc)
 # print(c_out_value, c_in_value)
 
 print(eff_lst)
-
