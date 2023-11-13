@@ -116,5 +116,30 @@ for k in range(0,2):
         XDMFFile("mobile_conc_with_advection.xdmf").write(post_processing_mobile_conc)
 
 
-print(eff_lst)
+# contour plots
+
+x, y = np.meshgrid(length_lst, temp_lst) 
+fig, ax = plt.subplots(1, 1)
+# print(x)
+# print(y)
+
+z_lst = [eff_lst]
+for n in range(4):
+    z_lst.append(eff_lst.copy())
+z = np.array(z_lst)
+
+# z_lst = []
+# for n in eff_lst:
+#     z_lst.append(i*(np.cos(x) + np.sin(y)))
+# z = np.array(z_lst)
+
+
+ax.contourf(x, y, z) 
+  
+ax.set_title('Contour Plot') 
+ax.set_ylabel('Temperature (K)') 
+ax.set_xlabel('Length') 
+# ax.legend()
+
+plt.show() 
 
