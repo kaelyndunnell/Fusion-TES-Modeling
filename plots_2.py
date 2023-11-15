@@ -1,4 +1,4 @@
-# modeling extractor efficiency
+# first attempt at plotting extractor efficiency against temperature and length.
 
 import festim as F
 import matplotlib.pyplot as plt
