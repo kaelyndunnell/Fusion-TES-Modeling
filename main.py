@@ -18,11 +18,11 @@ from fenics import inner, dot, grad
 
 from mesh_function import create_mesh, id_fluid, id_pipe_walls, inlet_id, outlet_id, top_id
 
-def run_model(temperature, length):
+def run_model(temperature, length, height_fluid, pipe_thickness):
     my_model = F.Simulation()
 
     # create mesh
-    create_mesh(length)
+    create_mesh(length, height_fluid, pipe_thickness)
 
     my_model.mesh = F.MeshFromXDMF(
         volume_file="volume_markers.xdmf",
@@ -109,8 +109,8 @@ def run_model(temperature, length):
     return c_out, c_in
 
 
-def compute_efficienty(temperature, length):
-    c_out, c_in = run_model(temperature, length)
+def compute_efficienty(temperature, length, height_fluid, pipe_thickness):
+    c_out, c_in = run_model(temperature, length, height_fluid, pipe_thickness)
     c_out_value = c_out.data[0]
     c_in_value = c_in.data[0]
     efficiency = 1 - c_out_value / c_in_value
