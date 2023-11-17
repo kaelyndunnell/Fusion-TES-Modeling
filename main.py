@@ -13,10 +13,19 @@ from fenics import (
     TestFunction,
     solve,
     inner,
+    set_log_level,
 )
 from fenics import inner, dot, grad
 
-from mesh_function import create_mesh, id_fluid, id_pipe_walls, inlet_id, outlet_id, top_id
+from mesh_function import (
+    create_mesh,
+    id_fluid,
+    id_pipe_walls,
+    inlet_id,
+    outlet_id,
+    top_id,
+)
+
 
 def run_model(temperature, length, height_fluid, pipe_thickness):
     my_model = F.Simulation()
@@ -27,7 +36,7 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
     my_model.mesh = F.MeshFromXDMF(
         volume_file="volume_markers.xdmf",
         boundary_file="surface_markers.xdmf",
-        type="cylindrical",
+        # type="cylindrical",
     )
     # materials
     eurofer = (
@@ -61,7 +70,7 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
     derived_quantities = F.DerivedQuantities([c_in, c_out])
 
     my_model.exports = F.Exports(
-        [F.XDMFExport("solute", folder="task3/", mode=1), derived_quantities]
+        [F.XDMFExport("solute", folder="results/", mode=1), derived_quantities]
     )
 
     my_model.settings = F.Settings(
@@ -76,13 +85,19 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
 
     functionspace = VectorFunctionSpace(mesh_sub, "CG", 1)
 
-    velocity = Expression(("6e-05*(x[1] - 0.5)*(x[1] + 0.5)", "0"), degree=2)
+    velocity = Expression(
+        ("6e-3*(x[1] - height_fluid)*(x[1] + height_fluid)", "0"),
+        height_fluid=height_fluid,
+        degree=2,
+    )
 
     velocity = interpolate(velocity, functionspace)
 
     V = VectorFunctionSpace(my_model.mesh.mesh, "CG", 1)
     u = Function(V)
     v = TestFunction(V)
+
+    # set_log_level(20)
 
     form = inner(u, v) * my_model.mesh.dx
     form += inner(velocity, v) * my_model.mesh.dx(id_fluid)
@@ -91,7 +106,6 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
     velocity = u
 
     XDMFFile("velocity_field.xdmf").write(u)
-
     (
         hydrogen_concentration,
         _,
@@ -116,3 +130,6 @@ def compute_efficienty(temperature, length, height_fluid, pipe_thickness):
     efficiency = 1 - c_out_value / c_in_value
     return efficiency
 
+
+if __name__ == "__main__":
+    run_model(temperature=700, length=0.4, height_fluid=3e-2, pipe_thickness=4e-3)
