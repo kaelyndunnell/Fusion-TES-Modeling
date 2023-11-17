@@ -10,7 +10,7 @@ bottom_id = 4
 id_fluid = 5
 id_pipe_walls = 6
 
-def create_mesh(length, refinement=200, height_fluid=3e-2, pipe_thickness=4e-3):
+def create_mesh(length, height_fluid, pipe_thickness, refinement=200):
     p1 = Point(0, 0)
     p2 = Point(length, height_fluid)
     fluid_rectangle = Rectangle(p1, p2)
