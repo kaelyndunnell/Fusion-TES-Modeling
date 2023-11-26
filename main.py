@@ -64,8 +64,9 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
         F.DirichletBC(field="solute", surfaces=inlet_id, value=1e18),
     ]
 
-    c_out = F.AverageSurface("solute", outlet_id)
     c_in = F.AverageSurface("solute", inlet_id)
+    c_out = F.AverageSurface("solute", outlet_id)
+    
 
     derived_quantities = F.DerivedQuantities([c_in, c_out])
 
@@ -123,7 +124,7 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
     return c_out, c_in
 
 
-def compute_efficienty(temperature, length, height_fluid, pipe_thickness):
+def compute_efficiency(temperature, length, height_fluid, pipe_thickness):
     c_out, c_in = run_model(temperature, length, height_fluid, pipe_thickness)
     c_out_value = c_out.data[0]
     c_in_value = c_in.data[0]
@@ -132,4 +133,5 @@ def compute_efficienty(temperature, length, height_fluid, pipe_thickness):
 
 
 if __name__ == "__main__":
-    run_model(temperature=700, length=0.4, height_fluid=3e-2, pipe_thickness=4e-3)
+    run_model(temperature=700, length=0.3, height_fluid=1e-3, pipe_thickness=4e-3)
+    print(compute_efficiency(temperature=500, length=0.3, height_fluid=1e-2, pipe_thickness=4e-3))
