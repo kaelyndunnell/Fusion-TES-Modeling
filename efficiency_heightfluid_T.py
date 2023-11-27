@@ -3,9 +3,9 @@ import numpy as np
 from main import compute_efficiency
 import matplotlib.pyplot as plt
 
-height_fluid_values = np.linspace(1e-2, 1, 10)  # m
-temperature_values = np.linspace(500, 800, 10)  # K
 pipe_thickness = 4e-3 # m
+height_fluid_values = np.linspace(pipe_thickness, 1e-2, 5)  # m
+temperature_values = np.linspace(500, 800, 5)  # K
 length = 0.3  # m
 
 efficiency_values = []
