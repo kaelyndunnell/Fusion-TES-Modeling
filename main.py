@@ -87,7 +87,7 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
     functionspace = VectorFunctionSpace(mesh_sub, "CG", 1)
 
     velocity = Expression(
-        ("6e-3*(x[1] - height_fluid)*(x[1] + height_fluid)", "0"),
+        ("6e2*(x[1] - height_fluid)*(x[1] + height_fluid)", "0"),
         height_fluid=height_fluid,
         degree=2,
     )
@@ -133,5 +133,5 @@ def compute_efficiency(temperature, length, height_fluid, pipe_thickness):
 
 
 if __name__ == "__main__":
-    run_model(temperature=700, length=0.3, height_fluid=1e-3, pipe_thickness=4e-3)
-    print(compute_efficiency(temperature=500, length=0.3, height_fluid=1e-2, pipe_thickness=4e-3))
+    # run_model(temperature=700, length=0.3, height_fluid=1e-3, pipe_thickness=4e-3)
+    print(compute_efficiency(temperature=800, length=0.3, height_fluid=1e-2, pipe_thickness=4e-3))
