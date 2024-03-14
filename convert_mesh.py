@@ -10,14 +10,13 @@ def convert_med_to_xdmf(filename, cell_type="tetra", facet_type="triangle"):
         facet_type (str, optional): the type of facet. Defaults to "triangle".
 
     Returns:
-        dict: a correspondance dict from tag number to subdomain
+        dict: a correspondance dict from tag number to subdomain as written in XDMF
     """
     
     mesh = meshio.read(filename)
 
     for mesh_block in mesh.cells:
         if mesh_block.type == cell_type:
-            print(mesh.cell_data_dict["cell_tags"][cell_type])
             meshio.write_points_cells(
                 "mesh_cells.xdmf",
                 mesh.points,
@@ -32,9 +31,11 @@ def convert_med_to_xdmf(filename, cell_type="tetra", facet_type="triangle"):
                 cell_data={"f": [-1 * mesh.cell_data_dict["cell_tags"][facet_type]]},
             )
 
+    
     correspondance_dict = mesh.cell_tags
 
-    print(correspondance_dict)
+    # reverse keys and values
+    correspondance_dict = {value[0]: -key for key, value in correspondance_dict.items()}
     return correspondance_dict
 
 if __name__ == "__main__":
