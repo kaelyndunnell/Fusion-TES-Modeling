@@ -3,6 +3,7 @@ from fenics import *
 import fenics as fe
 import tqdm.autonotebook
 import numpy as np
+import h_transport_materials as htm
 
 from convert_mesh import convert_mesh
 
@@ -106,7 +107,7 @@ def fluid_dynamics_sim_chorin(
 
     # ##### Boundary conditions ##### #
 
-    inlet_velocity = 2e-04  # units: m s-1
+    inlet_velocity = 2e-03  # units: m s-1
     outlet_pressure = 0  # units: Pa
 
     inflow = fe.DirichletBC(
@@ -133,9 +134,9 @@ def fluid_dynamics_sim_chorin(
 
     t = 0
     total_time = 20
-    dt = 5e-01  # Time step size
+    dt = 1  # Time step size
     num_steps = int(total_time / dt)
-    num_steps = 20
+    num_steps = 10
 
     k = fe.Constant(dt)
     n = fe.FacetNormal(mesh)
@@ -252,38 +253,53 @@ def run_simple_sim():
     outlet_id = correspondance_dict["outlet"]
     walls_id = correspondance_dict["walls"]
 
-    fluid_id = 6
-    inlet_id = 7
-    outlet_id = 8
-    walls_id = 9
-
     my_sim = F.Simulation()
 
     my_sim.mesh = F.MeshFromXDMF(
         volume_file="mesh_cells.xdmf", boundary_file="mesh_facets.xdmf"
     )
-    u, p = fluid_dynamics_sim_chorin(
-        mesh=my_sim.mesh.mesh,
-        volume_markers=my_sim.mesh.volume_markers,
-        surface_markers=my_sim.mesh.surface_markers,
-        id_inlet=inlet_id,
-        id_outlet=outlet_id,
-        id_walls=walls_id,
-    )
+    # u, p = fluid_dynamics_sim_chorin(
+    #     mesh=my_sim.mesh.mesh,
+    #     volume_markers=my_sim.mesh.volume_markers,
+    #     surface_markers=my_sim.mesh.surface_markers,
+    #     id_inlet=inlet_id,
+    #     id_outlet=outlet_id,
+    #     id_walls=walls_id,
+    # )
 
-    my_sim.materials = F.Material(id=fluid_id, D_0=1, E_D=0)
+    D_LiPb = htm.diffusivities.filter(material=htm.LIPB).mean()
+    print(D_LiPb)
+    my_sim.materials = F.Material(id=fluid_id, D_0=2, E_D=0)
 
-    inlet_BC = F.DirichletBC(surfaces=inlet_id, value=1, field="solute")
+    inlet_BC = F.DirichletBC(surfaces=inlet_id, value=1e15, field="solute")
     outlet_BC = F.DirichletBC(surfaces=outlet_id, value=0, field="solute")
-    my_sim.boundary_conditions = [inlet_BC, outlet_BC]
+    recombination_on_walls = F.DirichletBC(surfaces=walls_id, value=0, field="solute")
+    my_sim.boundary_conditions = [
+        inlet_BC,
+        recombination_on_walls,
+        # outlet_BC,
+    ]
 
-    my_sim.T = F.Temperature(500)
+    my_sim.T = F.Temperature(700)
 
     my_sim.settings = F.Settings(1e-10, 1e-10, transient=False)
 
     my_sim.exports = [F.XDMFExport(field="solute")]
+    my_sim.log_level = 20
 
     my_sim.initialise()
+
+    hydrogen_concentration = my_sim.h_transport_problem.mobile.mobile_concentration()
+    test_function_solute = my_sim.h_transport_problem.mobile.test_function
+
+    # advection_term = (
+    #     -fe.inner(fe.dot(fe.grad(hydrogen_concentration), u), test_function_solute)
+    #     * my_sim.mesh.dx
+    # )
+
+    # my_sim.h_transport_problem.F += advection_term
+    print(my_sim.h_transport_problem.F)
+    print(my_sim.materials[0].D_0)
     my_sim.run()
 
 
