@@ -21,6 +21,19 @@ def visc_lipb(T):  # units (Pa s)
 def fluid_dynamics_sim(
     mesh, volume_markers, surface_markers, id_inlet, id_outlet, id_walls
 ):
+    """
+    Solves the Navier-Stokes equations in steady state.
+    Doesn't work for large meshes cause too memory intensive
+
+    Args:
+        mesh (fenics.Mesh): the mesh
+        volume_markers (fenics.MeshFunction): the volume markers (subdomains)
+        surface_markers (fenics.MeshFunction): the surface markers (boundaries)
+        id_inlet (int): the id of the inlet boundary
+        id_outlet (int): the id of the outlet boundary
+        id_walls (int): the id of the walls
+    """
+
     V_ele = fe.VectorElement("CG", mesh.ufl_cell(), 2)
     Q_ele = fe.FiniteElement("CG", mesh.ufl_cell(), 1)
     W = fe.FunctionSpace(mesh, fe.MixedElement([V_ele, Q_ele]))
@@ -90,6 +103,22 @@ def fluid_dynamics_sim(
 def fluid_dynamics_sim_chorin(
     mesh, volume_markers, surface_markers, id_inlet, id_outlet, id_walls
 ):
+    """
+    Solves the Navier-Stokes equations using the Chorin's projection method
+    See https://fenicsproject.org/pub/tutorial/html/._ftut1009.html#ftut1:NS for more details
+
+    Args:
+        mesh (fenics.Mesh): the mesh
+        volume_markers (fenics.MeshFunction): the volume markers (subdomains)
+        surface_markers (fenics.MeshFunction): the surface markers (boundaries)
+        id_inlet (int): the id of the inlet boundary
+        id_outlet (int): the id of the outlet boundary
+        id_walls (int or list): the id(s) of the walls
+
+    Returns:
+        fenics.Function: the velocity field
+        fenics.Function: the pressure field
+    """
     V = fe.VectorFunctionSpace(mesh, "CG", 2)
     Q = fe.FunctionSpace(mesh, "CG", 1)
 
@@ -111,6 +140,12 @@ def fluid_dynamics_sim_chorin(
     inflow = fe.DirichletBC(
         V, fe.Constant((inlet_velocity, 0.0, 0.0)), surface_markers, id_inlet
     )
+
+    # make sure id_walls is a list
+    if isinstance(id_walls, int):
+        id_walls = [id_walls]
+
+    # iterate through the walls
     walls = []
     for id_wall in id_walls:
         walls.append(
@@ -123,9 +158,6 @@ def fluid_dynamics_sim_chorin(
     bcu = [inflow] + walls
     bcp = [pressure_outlet]
 
-    # ##### CFD --> Fluid Materials properties ##### #
-
-    # Fluid properties
     # ##### Solver ##### #
     dx = fe.Measure("dx", subdomain_data=volume_markers)
     ds = fe.Measure("ds", subdomain_data=surface_markers)
@@ -141,7 +173,7 @@ def fluid_dynamics_sim_chorin(
     U = 0.5 * (u_n + u)
 
     # LiPb
-    T = 700  # TODO more generic
+    T = 700  # TODO make this more generic
     mu = visc_lipb(T)
     rho = rho_lipb(T)
 
@@ -244,6 +276,13 @@ def fluid_dynamics_sim_chorin(
 
 
 def run_simple_sim():
+    """
+    Runs FESTIM coupled to the fluid dynamics solver
+    on a mesh with a single fluid domain
+
+    Returns:
+        festim.Simulation: the simulation object
+    """
 
     # TODO find a way to make this more generic
     fluid_id = 6
@@ -275,12 +314,10 @@ def run_simple_sim():
     )
 
     inlet_BC = F.DirichletBC(surfaces=inlet_id, value=1e15, field="solute")
-    outlet_BC = F.DirichletBC(surfaces=outlet_id, value=0, field="solute")
     recombination_on_vacuum = F.DirichletBC(surfaces=vacuum_id, value=0, field="solute")
     my_sim.boundary_conditions = [
         inlet_BC,
         recombination_on_vacuum,
-        # outlet_BC,
     ]
 
     my_sim.T = F.Temperature(700)
@@ -303,6 +340,7 @@ def run_simple_sim():
     my_sim.h_transport_problem.F += advection_term
     print(my_sim.h_transport_problem.F)
     my_sim.run()
+    return my_sim
 
 
 if __name__ == "__main__":
