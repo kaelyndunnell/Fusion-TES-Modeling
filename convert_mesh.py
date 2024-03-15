@@ -53,3 +53,8 @@ def convert_mesh(
     print("Correspondance between cell tags and cell ids:")
     print(correspondance_dict)
     return correspondance_dict
+
+
+if __name__ == "__main__":
+    correspondance_dict = convert_mesh("Mesh_1.med")
+    print(correspondance_dict)
