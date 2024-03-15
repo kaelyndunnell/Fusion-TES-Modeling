@@ -56,5 +56,8 @@ def convert_mesh(
 
 
 if __name__ == "__main__":
-    correspondance_dict = convert_mesh("Mesh_1.med")
-    print(correspondance_dict)
+    convert_mesh(
+        "test_unit_mesh.med",
+        output_cell_file="mesh_cells.xdmf",
+        output_facet_file="mesh_facets.xdmf",
+    )

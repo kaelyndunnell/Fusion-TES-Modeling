@@ -5,8 +5,6 @@ import tqdm.autonotebook
 import numpy as np
 import h_transport_materials as htm
 
-from convert_mesh import convert_mesh
-
 
 # TODO find original refs for these but for now see James' paper
 # TODO is T in K or degC?
@@ -246,13 +244,11 @@ def fluid_dynamics_sim_chorin(
 
 
 def run_simple_sim():
-    correspondance_dict = convert_mesh("mesh.med")
 
-    fluid_id = correspondance_dict["fluid"]
-    inlet_id = correspondance_dict["inlet"]
-    outlet_id = correspondance_dict["outlet"]
-    walls_id = correspondance_dict["walls"]
-
+    # TODO find a way to make this more generic
+    fluid_id = 6
+    inlet_id = 7
+    outlet_id = 8
     my_sim = F.Simulation()
 
     my_sim.mesh = F.MeshFromXDMF(
