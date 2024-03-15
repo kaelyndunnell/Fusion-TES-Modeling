@@ -12,5 +12,5 @@ dependencies:
   - numpy==1.24
   - pip:
     # - "git+https://github.com/jorgensd/mesh_converter"
-    - meshio[all]
+    # - meshio[all]
     - festim
