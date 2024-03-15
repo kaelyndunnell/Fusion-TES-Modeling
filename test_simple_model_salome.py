@@ -111,28 +111,28 @@ def fluid_dynamics_sim_chorin(
     inflow = fe.DirichletBC(
         V, fe.Constant((inlet_velocity, 0.0, 0.0)), surface_markers, id_inlet
     )
-
-    walls = fe.DirichletBC(V, fe.Constant((0.0, 0.0, 0.0)), surface_markers, id_walls)
+    walls = []
+    for id_wall in id_walls:
+        walls.append(
+            fe.DirichletBC(V, fe.Constant((0.0, 0.0, 0.0)), surface_markers, id_wall)
+        )
 
     pressure_outlet = fe.DirichletBC(
         Q, fe.Constant(outlet_pressure), surface_markers, id_outlet
     )
-    bcu = [inflow, walls]
+    bcu = [inflow] + walls
     bcp = [pressure_outlet]
 
     # ##### CFD --> Fluid Materials properties ##### #
 
     # Fluid properties
-    rho = 1  # rho_0_lipb
-    mu = 1  # visc_lipb
-
     # ##### Solver ##### #
     dx = fe.Measure("dx", subdomain_data=volume_markers)
     ds = fe.Measure("ds", subdomain_data=surface_markers)
 
     t = 0
     total_time = 20
-    dt = 1  # Time step size
+    dt = 0.1  # Time step size
     num_steps = int(total_time / dt)
     num_steps = 10
 
@@ -141,7 +141,7 @@ def fluid_dynamics_sim_chorin(
     U = 0.5 * (u_n + u)
 
     # LiPb
-    T = 600
+    T = 700  # TODO more generic
     mu = visc_lipb(T)
     rho = rho_lipb(T)
 
@@ -249,30 +249,37 @@ def run_simple_sim():
     fluid_id = 6
     inlet_id = 7
     outlet_id = 8
+    vacuum_id = 9
+    walls_id = 10
     my_sim = F.Simulation()
 
     my_sim.mesh = F.MeshFromXDMF(
         volume_file="mesh_cells.xdmf", boundary_file="mesh_facets.xdmf"
     )
-    # u, p = fluid_dynamics_sim_chorin(
-    #     mesh=my_sim.mesh.mesh,
-    #     volume_markers=my_sim.mesh.volume_markers,
-    #     surface_markers=my_sim.mesh.surface_markers,
-    #     id_inlet=inlet_id,
-    #     id_outlet=outlet_id,
-    #     id_walls=walls_id,
-    # )
+    u, p = fluid_dynamics_sim_chorin(
+        mesh=my_sim.mesh.mesh,
+        volume_markers=my_sim.mesh.volume_markers,
+        surface_markers=my_sim.mesh.surface_markers,
+        id_inlet=inlet_id,
+        id_outlet=outlet_id,
+        id_walls=[walls_id, vacuum_id],
+    )
 
     D_LiPb = htm.diffusivities.filter(material=htm.LIPB).mean()
     print(D_LiPb)
-    my_sim.materials = F.Material(id=fluid_id, D_0=2, E_D=0)
+    factor = 100  # TODO remove this by improving mesh
+    my_sim.materials = F.Material(
+        id=fluid_id,
+        D_0=D_LiPb.pre_exp.magnitude * factor,
+        E_D=D_LiPb.act_energy.magnitude,
+    )
 
     inlet_BC = F.DirichletBC(surfaces=inlet_id, value=1e15, field="solute")
     outlet_BC = F.DirichletBC(surfaces=outlet_id, value=0, field="solute")
-    recombination_on_walls = F.DirichletBC(surfaces=walls_id, value=0, field="solute")
+    recombination_on_vacuum = F.DirichletBC(surfaces=vacuum_id, value=0, field="solute")
     my_sim.boundary_conditions = [
         inlet_BC,
-        recombination_on_walls,
+        recombination_on_vacuum,
         # outlet_BC,
     ]
 
@@ -288,14 +295,13 @@ def run_simple_sim():
     hydrogen_concentration = my_sim.h_transport_problem.mobile.mobile_concentration()
     test_function_solute = my_sim.h_transport_problem.mobile.test_function
 
-    # advection_term = (
-    #     -fe.inner(fe.dot(fe.grad(hydrogen_concentration), u), test_function_solute)
-    #     * my_sim.mesh.dx
-    # )
+    advection_term = (
+        fe.inner(fe.dot(fe.grad(hydrogen_concentration), u), test_function_solute)
+        * my_sim.mesh.dx
+    )
 
-    # my_sim.h_transport_problem.F += advection_term
+    my_sim.h_transport_problem.F += advection_term
     print(my_sim.h_transport_problem.F)
-    print(my_sim.materials[0].D_0)
     my_sim.run()
 
 
