@@ -1,5 +1,13 @@
 from fenics import *
 
+from convert_mesh import convert_mesh
+
+convert_mesh(
+    "Mesh_1.med",
+    output_cell_file="mesh_cells.xdmf",
+    output_facet_file="mesh_facets.xdmf",
+)
+
 inlet_id = 8
 outlet_id = 7
 fluid_id = 6
