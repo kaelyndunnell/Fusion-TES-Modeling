@@ -1,0 +1,16 @@
+name: tes-model-env
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - pip
+  - fenics
+  # - mpi4py
+  # - adios2=2.9.2=mpi*
+  - numpy==1.24
+  - pip:
+    # - "git+https://github.com/jorgensd/mesh_converter"
+    # - meshio[all]
+    - festim
