@@ -8,6 +8,7 @@ from convert_mesh import convert_mesh
 
 
 # TODO find original refs for these but for now see James' paper
+# TODO is T in K or degC?
 def rho_lipb(T):  # units in kg/(m**3)
     return 10520.35 - 1.19051 * T
 
@@ -132,17 +133,18 @@ def fluid_dynamics_sim_chorin(
 
     t = 0
     total_time = 20
-    dt = 2e-01  # Time step size
+    dt = 5e-01  # Time step size
     num_steps = int(total_time / dt)
-    num_steps = 3
+    num_steps = 20
 
     k = fe.Constant(dt)
     n = fe.FacetNormal(mesh)
     U = 0.5 * (u_n + u)
 
     # LiPb
-    mu = 1  # properties.visc_lipb(T)
-    rho = 1  # properties.rho_lipb(T)
+    T = 600
+    mu = visc_lipb(T)
+    rho = rho_lipb(T)
 
     def epsilon(u):
         return fe.sym(fe.nabla_grad(u))
@@ -238,6 +240,8 @@ def fluid_dynamics_sim_chorin(
 
         max_u.append(u_.vector().max())
         np.savetxt(results_folder + "3D_case_max_u.txt", np.array(max_u))
+
+    return u_, p_
 
 
 def run_simple_sim():
