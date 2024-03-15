@@ -3,7 +3,7 @@ from fenics import *
 from convert_mesh import convert_mesh
 
 convert_mesh(
-    "Mesh_1.med",
+    "mesh.med",
     output_cell_file="mesh_cells.xdmf",
     output_facet_file="mesh_facets.xdmf",
 )
