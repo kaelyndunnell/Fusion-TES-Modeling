@@ -57,7 +57,7 @@ def convert_mesh(
 
 if __name__ == "__main__":
     convert_mesh(
-        "test_unit_mesh.med",
+        "mesh_simple_pav_fine.med",
         output_cell_file="mesh_cells.xdmf",
         output_facet_file="mesh_facets.xdmf",
     )
