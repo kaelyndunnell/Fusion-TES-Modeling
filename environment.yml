@@ -10,6 +10,7 @@ dependencies:
   # - mpi4py
   # - adios2=2.9.2=mpi*
   - numpy==1.24
+  - tqdm
   - pip:
     # - "git+https://github.com/jorgensd/mesh_converter"
     # - meshio[all]
