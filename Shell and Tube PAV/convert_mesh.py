@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import meshio
+=======
+https://github.com/kaelyndunnell/Fusion-TES-Modeling/tree/main/simple_PAVimport meshio
+>>>>>>> 70072a5e16bca4fc19edd8ec2f290cf6e0c10e78
 
 
 def convert_mesh(
@@ -57,7 +61,11 @@ def convert_mesh(
 
 if __name__ == "__main__":
     convert_mesh(
+<<<<<<< HEAD
         "Complex_Mesh_1.med",
+=======
+        "mesh_simple_pav_fine.med",
+>>>>>>> 70072a5e16bca4fc19edd8ec2f290cf6e0c10e78
         output_cell_file="mesh_cells.xdmf",
         output_facet_file="mesh_facets.xdmf",
     )
