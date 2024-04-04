@@ -155,14 +155,14 @@ def fluid_dynamics_sim_chorin(
     [bc.apply(A1) for bc in bcu]
     [bc.apply(A2) for bc in bcp]
 
-    results_folder = "Results/velocity_fields/"
-    velocity_file = fe.XDMFFile(results_folder + "u_3D_sub.xdmf")
-    pressure_file = fe.XDMFFile("Results/3D_results/p_3D_sub.xdmf")
+    velocity_file = fe.XDMFFile("velocity_field.xdmf")
+    pressure_file = fe.XDMFFile("pressure_field.xdmf")
 
     max_u = []
 
     # Time-stepping
     progress = tqdm.autonotebook.tqdm(desc="Solving Navier-Stokes", total=num_steps)
+    append = False
     for i in range(num_steps):
         progress.update(1)
         # Update current time step
@@ -187,17 +187,24 @@ def fluid_dynamics_sim_chorin(
         u_n.assign(u_)
         p_n.assign(p_)
 
-        velocity_file.write(u_, t)
-        # pressure_file.write(p_, t)
-
-        # XDMFFile("pressure_field.xdmf").write(p)
-
         max_u.append(u_.vector().max())
-        np.savetxt(results_folder + "3D_case_max_u.txt", np.array(max_u))
+        np.savetxt("3D_case_max_u.txt", np.array(max_u))
 
-    XDMFFile("velocity_field.xdmf").write(u_)
-    XDMFFile("pressure_field.xdmf").write(p_)
-
+        velocity_file.write_checkpoint(
+                    u_,
+                    "velocity",
+                    t,
+                    XDMFFile.Encoding.HDF5,
+                    append=append,
+                )
+        pressure_file.write_checkpoint(
+                    p_,
+                    "pressure",
+                    t,
+                    XDMFFile.Encoding.HDF5,
+                    append=append,
+                )
+        append = True
     return u_, p_
 
 if __name__ == "__main__":
