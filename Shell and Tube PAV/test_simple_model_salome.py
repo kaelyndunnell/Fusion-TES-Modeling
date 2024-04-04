@@ -35,7 +35,7 @@ def run_simple_sim():
     # factor = 100  # TODO remove this by improving mesh
     my_sim.materials = F.Material(
         id=fluid_id,
-        D_0=D_LiPb.pre_exp.magnitude * 100,
+        D_0=D_LiPb.pre_exp.magnitude,
         E_D=D_LiPb.act_energy.magnitude,
     )
 
@@ -50,7 +50,14 @@ def run_simple_sim():
 
     my_sim.settings = F.Settings(1e-10, 1e-10, transient=False)
 
-    my_sim.exports = [F.XDMFExport(field="solute")]
+    average_inlet = F.AverageSurface("solute", inlet_id)
+    average_outlet = F.AverageSurface("solute", outlet_id)
+    extracted_flux = F.SurfaceFlux("solute", vacuum_id)
+    derived_quantities = F.DerivedQuantities(
+        [average_inlet, average_outlet, extracted_flux]
+    )
+
+    my_sim.exports = [F.XDMFExport(field="solute"), derived_quantities]
     my_sim.log_level = 20
 
     my_sim.initialise()
@@ -66,6 +73,13 @@ def run_simple_sim():
     my_sim.h_transport_problem.F += advection_term
     print(my_sim.h_transport_problem.F)
     my_sim.run()
+
+    extraction_efficiency = (
+        average_inlet.data[-1] - average_outlet.data[-1]
+    ) / average_inlet.data[-1]
+    print(f"Extraction efficiency: {extraction_efficiency:.2%}")
+    print(f"Extracted flux: {extracted_flux.data[-1]:.2e} T/s")
+
     return my_sim
 
 
