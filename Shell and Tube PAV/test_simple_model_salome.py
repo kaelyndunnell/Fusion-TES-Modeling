@@ -299,7 +299,7 @@ def run_simple_sim():
     fenics_mesh = my_sim.mesh.mesh
     V = fe.VectorFunctionSpace(fenics_mesh, "CG", 2)
     u = fe.Function(V)
-    fe.XDMFFile("velocity.xdmf").read_checkpoint(u, "velocity", -1)
+    fe.XDMFFile("velocity_field.xdmf").read_checkpoint(u, "velocity", -1)
 
     D_LiPb = htm.diffusivities.filter(material=htm.LIPB).mean()
     print(D_LiPb)
