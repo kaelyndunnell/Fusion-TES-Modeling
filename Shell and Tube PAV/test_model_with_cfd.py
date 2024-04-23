@@ -238,12 +238,10 @@ def fluid_dynamics_sim_chorin(
 
         max_u.append(u_.vector().max())
         np.savetxt(results_folder + "3D_case_max_u.txt", np.array(max_u))
-
+    
 
 def run_simple_sim():
     correspondance_dict = convert_mesh("mesh.med")
-
-@@ -12,11 +248,24 @@ def run_simple_sim():
     outlet_id = correspondance_dict["outlet"]
     walls_id = correspondance_dict["walls"]
 
