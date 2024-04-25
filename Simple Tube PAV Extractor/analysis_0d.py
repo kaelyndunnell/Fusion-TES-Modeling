@@ -38,34 +38,94 @@ solution = sp.solve(
     dict=True,
 )
 
-# replace all symbols with values
-c_l1_val = 1
-ro_val = 0.15
-ri_val = 0.1
-new_values = {}
-for symbol in [c_l2, c_s1, c_s2]:
-    new_val = solution[0][symbol].subs(
-        {
-            ro: ro_val,
-            ri: ri_val,
-            D_s: 1e-9,
-            K_L: 1e-3,
-            K_S: 2e-3,
-            K_r: 1e-3,
-            K_d: 1e-3,
-            c_l1: c_l1_val,
-            P_V: 0,
-            K_T: 1e-9,
-        }
-    )
-    new_values[symbol] = new_val
+
+def replace_values(solution, new_vals):
+    new_solution = []
+    for sol in solution:
+        new_sol = {}
+        for symbol, value in sol.items():
+            new_val = value.subs(new_vals)
+            new_sol[symbol] = new_val
+        new_solution.append(new_sol)
+    return new_solution
+
+
+def flux(new_vals):
+    new_solution = replace_values(solution, new_vals)
+    return new_solution[0][J]
+
 
 # plot solution with matplotlib
 import matplotlib.pyplot as plt
 
+# replace all symbols with values
+c_l1_val = 1
+ro_val = 0.15
+ri_val = 0.1
+
+new_vals = {
+    ro: ro_val,
+    ri: ri_val,
+    D_s: 1e-9,
+    K_L: 1e-3,
+    K_S: 2e-3,
+    K_r: 1e-3,
+    K_d: 1e-3,
+    c_l1: c_l1_val,
+    P_V: 0,
+    K_T: 1e-9,
+}
+new_values = replace_values(solution, new_vals)
 fig, ax = plt.subplots()
 ax.plot(
     [0, ri_val, ri_val, ro_val],
-    [c_l1_val, new_values[c_l2], new_values[c_s1], new_values[c_s2]],
+    [c_l1_val, new_values[0][c_l2], new_values[0][c_s1], new_values[0][c_s2]],
 )
+plt.show()
+
+
+new_vals = {
+    ro: ro_val,
+    ri: ri_val,
+    D_s: 1e-2,
+    K_L: 1e-3,
+    K_S: 2e-3,
+    K_r: 1e-3,
+    K_d: 1e-3,
+    P_V: 0,
+    K_T: 1e-2,
+}
+
+flux_given_c = lambda c: flux({c_l1: c, **new_vals})
+import numpy as np
+
+concentration_values = np.logspace(1, 4)
+flux_values = [flux_given_c(c) for c in concentration_values]
+
+plt.plot(concentration_values, flux_values)
+plt.show()
+
+# solve the ODE with scipy
+# dc/dx = - 2 pi R / Q * J(c)
+
+from scipy.integrate import solve_ivp
+
+R = ri_val
+Q = 1e-3
+c0 = 1
+x0 = 0
+x1 = 1
+
+
+# lambdify the flux function
+flux_given_c = sp.lambdify([c_l1], flux({**new_vals}))
+
+
+def dc_dx(x, c):
+    return -2 * np.pi * R / Q * flux_given_c(c)
+
+
+sol = solve_ivp(dc_dx, (x0, x1), [c0], t_eval=np.linspace(x0, x1, 100))
+plt.plot(sol.t, sol.y[0])
+plt.ylim(bottom=0)
 plt.show()
