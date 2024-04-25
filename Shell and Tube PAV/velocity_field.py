@@ -90,7 +90,6 @@ def fluid_dynamics_sim_chorin(
     total_time = 20
     dt = 0.1  # Time step size
     num_steps = int(total_time / dt)
-    num_steps = 10
 
     k = fe.Constant(dt)
     n = fe.FacetNormal(mesh)
