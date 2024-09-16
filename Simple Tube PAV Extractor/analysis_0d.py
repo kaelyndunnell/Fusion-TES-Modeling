@@ -81,6 +81,8 @@ ax.plot(
     [0, ri_val, ri_val, ro_val],
     [c_l1_val, new_values[0][c_l2], new_values[0][c_s1], new_values[0][c_s2]],
 )
+plt.xlabel("r (m)")
+plt.ylabel("Concentration (molT/m3)")
 plt.show()
 
 
