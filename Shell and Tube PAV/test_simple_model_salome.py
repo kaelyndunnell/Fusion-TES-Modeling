@@ -49,12 +49,14 @@ def run_simple_sim():
     my_sim.T = F.Temperature(700)
 
     my_sim.settings = F.Settings(1e-10, 1e-10, transient=False)
+
     average_inlet = F.AverageSurface("solute", inlet_id)
     average_outlet = F.AverageSurface("solute", outlet_id)
     extracted_flux = F.SurfaceFlux("solute", vacuum_id)
     derived_quantities = F.DerivedQuantities(
         [average_inlet, average_outlet, extracted_flux]
     )
+
     my_sim.exports = [F.XDMFExport(field="solute"), derived_quantities]
     my_sim.log_level = 20
 
@@ -71,11 +73,13 @@ def run_simple_sim():
     my_sim.h_transport_problem.F += advection_term
     print(my_sim.h_transport_problem.F)
     my_sim.run()
+
     extraction_efficiency = (
         average_inlet.data[-1] - average_outlet.data[-1]
     ) / average_inlet.data[-1]
     print(f"Extraction efficiency: {extraction_efficiency:.2%}")
     print(f"Extracted flux: {extracted_flux.data[-1]:.2e} T/s")
+
     return my_sim
 
 

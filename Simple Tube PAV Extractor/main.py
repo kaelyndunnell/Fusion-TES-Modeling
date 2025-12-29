@@ -27,11 +27,11 @@ from mesh_function import (
 )
 
 
-def run_model(temperature, length, height_fluid, pipe_thickness):
+def run_model(temperature, length, height_fluid, pipe_thickness, c_inlet=1e18):
     my_model = F.Simulation()
 
     # create mesh
-    create_mesh(length, height_fluid, pipe_thickness)
+    create_mesh(length, height_fluid, pipe_thickness, refinement=800)
 
     my_model.mesh = F.MeshFromXDMF(
         volume_file="volume_markers.xdmf",
@@ -61,14 +61,14 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
 
     my_model.boundary_conditions = [
         F.DirichletBC(field="solute", surfaces=top_id, value=0),
-        F.DirichletBC(field="solute", surfaces=inlet_id, value=1e18),
+        F.DirichletBC(field="solute", surfaces=inlet_id, value=c_inlet),
     ]
 
-    c_in = F.AverageSurface("solute", inlet_id)
-    c_out = F.AverageSurface("solute", outlet_id)
-    
+    avg_c_in = F.AverageSurface("solute", inlet_id)
+    avg_c_out = F.AverageSurface("solute", outlet_id)
+    flux_to_vac = F.SurfaceFlux("solute", top_id)
 
-    derived_quantities = F.DerivedQuantities([c_in, c_out])
+    derived_quantities = F.DerivedQuantities([avg_c_in, avg_c_out, flux_to_vac])
 
     my_model.exports = F.Exports(
         [F.XDMFExport("solute", folder="results/", mode=1), derived_quantities]
@@ -115,17 +115,21 @@ def run_model(temperature, length, height_fluid, pipe_thickness):
     )
     test_function_mobile = my_model.h_transport_problem.mobile.test_function
     advection_term = inner(
-        dot(grad(hydrogen_concentration), u), test_function_mobile
+        inner(grad(hydrogen_concentration), u), test_function_mobile
     ) * my_model.mesh.dx(id_fluid)
     my_model.h_transport_problem.F += advection_term
 
     my_model.run()
 
-    return c_out, c_in
+    print(flux_to_vac.data[-1])
+
+    return avg_c_out, avg_c_in, flux_to_vac
 
 
-def compute_efficiency(temperature, length, height_fluid, pipe_thickness):
-    c_out, c_in = run_model(temperature, length, height_fluid, pipe_thickness)
+def compute_efficiency(temperature, length, height_fluid, pipe_thickness, c_inlet=1e18):
+    c_out, c_in, flux_to_vac = run_model(
+        temperature, length, height_fluid, pipe_thickness, c_inlet
+    )
     c_out_value = c_out.data[0]
     c_in_value = c_in.data[0]
     efficiency = 1 - c_out_value / c_in_value
@@ -134,4 +138,8 @@ def compute_efficiency(temperature, length, height_fluid, pipe_thickness):
 
 if __name__ == "__main__":
     # run_model(temperature=700, length=0.3, height_fluid=1e-3, pipe_thickness=4e-3)
-    print(compute_efficiency(temperature=800, length=0.3, height_fluid=1e-2, pipe_thickness=4e-3))
+    print(
+        compute_efficiency(
+            temperature=800, length=0.3, height_fluid=1e-2, pipe_thickness=4e-3
+        )
+    )
