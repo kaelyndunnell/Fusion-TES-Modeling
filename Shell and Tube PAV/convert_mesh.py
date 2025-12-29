@@ -57,7 +57,8 @@ def convert_mesh(
 
 if __name__ == "__main__":
     convert_mesh(
-        "Complex_Mesh_1.med",
+        # "Complex_Mesh_200k.med",
+        "reverse-correct-mesh.med",
         output_cell_file="mesh_cells.xdmf",
         output_facet_file="mesh_facets.xdmf",
     )

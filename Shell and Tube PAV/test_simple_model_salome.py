@@ -17,8 +17,8 @@ def run_simple_sim():
     fluid_id = 6
     inlet_id = 7
     outlet_id = 8
-    vacuum_id = 9
-    walls_id = 10
+    vacuum_id = 10
+    walls_id = 9
     my_sim = F.Simulation()
 
     my_sim.mesh = F.MeshFromXDMF(
@@ -35,7 +35,7 @@ def run_simple_sim():
     # factor = 100  # TODO remove this by improving mesh
     my_sim.materials = F.Material(
         id=fluid_id,
-        D_0=D_LiPb.pre_exp.magnitude,
+        D_0=D_LiPb.pre_exp.magnitude * 2,
         E_D=D_LiPb.act_energy.magnitude,
     )
 

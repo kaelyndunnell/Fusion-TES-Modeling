@@ -13,13 +13,16 @@ outlet_id = 8
 vacuum_id = 9
 walls_id = 10
 
+
 def rho_lipb(T):  # units in kg/(m**3)
     return 10520.35 - 1.19051 * T
+
 
 def visc_lipb(T):  # units (Pa s)
     return (
         0.01555147189 - 4.827051855e-05 * T + 5.641475215e-08 * T**2 - 2.2887e-11 * T**3
     )
+
 
 def fluid_dynamics_sim_chorin(
     mesh, volume_markers, surface_markers, id_inlet, id_outlet, id_walls
@@ -59,7 +62,7 @@ def fluid_dynamics_sim_chorin(
     outlet_pressure = 0  # units: Pa
 
     inflow = fe.DirichletBC(
-        V, fe.Constant((inlet_velocity, 0.0, 0.0)), surface_markers, id_inlet
+        V, fe.Constant((0.0, 0.0, -inlet_velocity)), surface_markers, id_inlet
     )
 
     # make sure id_walls is a list
@@ -87,7 +90,6 @@ def fluid_dynamics_sim_chorin(
     total_time = 20
     dt = 0.1  # Time step size
     num_steps = int(total_time / dt)
-    num_steps = 10
 
     k = fe.Constant(dt)
     n = fe.FacetNormal(mesh)
@@ -116,7 +118,7 @@ def fluid_dynamics_sim_chorin(
     a1 = fe.lhs(F1)
     L1 = fe.rhs(F1)
 
-    solver1 = fe.KrylovSolver("bicgstab", "hypre_amg")
+    solver1 = fe.KrylovSolver("gmres", "jacobi")
     solver1.parameters["absolute_tolerance"] = 1e-08
     solver1.parameters["relative_tolerance"] = 1e-08
     solver1.parameters["maximum_iterations"] = 1000
@@ -151,9 +153,6 @@ def fluid_dynamics_sim_chorin(
     A1 = fe.assemble(a1)
     A2 = fe.assemble(a2)
     A3 = fe.assemble(a3)
-
-    [bc.apply(A1) for bc in bcu]
-    [bc.apply(A2) for bc in bcp]
 
     velocity_file = fe.XDMFFile("velocity_field.xdmf")
     pressure_file = fe.XDMFFile("pressure_field.xdmf")
@@ -191,21 +190,22 @@ def fluid_dynamics_sim_chorin(
         np.savetxt("3D_case_max_u.txt", np.array(max_u))
 
         velocity_file.write_checkpoint(
-                    u_,
-                    "velocity",
-                    t,
-                    XDMFFile.Encoding.HDF5,
-                    append=append,
-                )
+            u_,
+            "velocity",
+            t,
+            XDMFFile.Encoding.HDF5,
+            append=append,
+        )
         pressure_file.write_checkpoint(
-                    p_,
-                    "pressure",
-                    t,
-                    XDMFFile.Encoding.HDF5,
-                    append=append,
-                )
+            p_,
+            "pressure",
+            t,
+            XDMFFile.Encoding.HDF5,
+            append=append,
+        )
         append = True
     return u_, p_
+
 
 if __name__ == "__main__":
     my_sim = F.Simulation()
