@@ -1,0 +1,57 @@
+#!/bin/bash
+#-----------------------------------------------
+# Allrun script for parallel simpleFoam case
+#-----------------------------------------------
+
+# Number of processors
+NPROC=4
+
+#-----------------------------------------------
+# 2️⃣ Restore initial conditions
+#-----------------------------------------------
+echo "Restoring initial conditions from 0.orig..."
+cp -r 0.orig/* 0/
+
+#-----------------------------------------------
+# 3️⃣ Convert GMSH mesh to OpenFOAM format
+#-----------------------------------------------
+echo "Converting GMSH mesh..."
+gmshToFoam reverse.msh
+
+#-----------------------------------------------
+# 4️⃣ Check mesh
+#-----------------------------------------------
+echo "Checking mesh..."
+checkMesh
+
+#-----------------------------------------------
+# 5️⃣ Decompose domain for parallel run
+#-----------------------------------------------
+echo "Decomposing domain for $NPROC processors..."
+decomposePar
+
+#-----------------------------------------------
+# 6️⃣ Run solver in parallel
+#-----------------------------------------------
+echo "Running simpleFoam in parallel..."
+mpirun -np $NPROC simpleFoam -parallel > log.simpleFoam
+
+#-----------------------------------------------
+# 7️⃣ Reconstruct results
+#-----------------------------------------------
+echo "Reconstructing parallel results..."
+reconstructPar
+
+#-----------------------------------------------
+# 8️⃣ Clean processor directories
+#-----------------------------------------------
+echo "Cleaning processor directories..."
+rm -rf processor*
+
+#-----------------------------------------------
+# 9️⃣ Create case.foam for ParaView
+#-----------------------------------------------
+echo "Creating case.foam for ParaView..."
+touch case.foam
+
+echo "Allrun finished!"
