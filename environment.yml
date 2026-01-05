@@ -5,14 +5,19 @@ channels:
   - defaults
 
 dependencies:
-  - pip
-  - fenics
-  # - mpi4py
-  # - adios2=2.9.2=mpi*
-  - numpy==1.24
-  - tqdm
-  - mshr
+# TODO: add OpenFoam dependencies
+  - sphinx-tags
+  - matplotlib
+  - meshio[all]
+  - pip>=20.1
+  - ipykernel
+  - nbconvert
+  # - mshr
+  - fenics-dolfinx
+  - festim=2.0b0
+  - python-gmsh
   - pip:
-    # - "git+https://github.com/jorgensd/mesh_converter"
-    # - meshio[all]
-    - festim
+    - pyparsing
+    - h-transport-materials==0.16
+    - pyvista[all,trame]  # trame cannot be installed on conda
+    - git+https://github.com/festim-dev/foam2dolfinx
