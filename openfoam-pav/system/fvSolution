@@ -1,0 +1,115 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| fvSolution for transient PIMPLE (U,p)
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+
+solvers
+{
+    p
+    {
+        solver           GAMG;
+        tolerance        1e-6;
+        relTol           0.05;
+        smoother         DICGaussSeidel;
+        // optional settings to control GAMG aggressiveness
+        nPreSweeps       1;
+        nPostSweeps      2;
+        nFinestSweeps    2;
+        cacheAgglomeration true;
+        agglomerator     faceAreaPair;
+    }
+
+    pFinal
+    {
+        $p;
+        relTol          0;
+    }
+
+    U
+    {
+        solver           PBiCG;
+        preconditioner   DILU;
+        tolerance        1e-6;
+        relTol           0.1;
+    }
+
+    "(U|k|epsilon)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-05;
+        relTol          0.1;
+    }
+
+    "(U|k|epsilon)Final"
+    {
+        $U;
+        relTol          0;
+    }
+    k
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        tolerance       1e-5;
+        relTol          0.1;
+        min             1e-10;
+    }
+
+    omega
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        tolerance       1e-5;
+        relTol          0.1;
+        nSweeps         1;
+        min             1e-7;
+    }
+ omegaFinal
+    {
+        solver      smoothSolver;
+        smoother    GaussSeidel;
+        tolerance   1e-7;
+        relTol      0;
+    }
+    epsilon
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        tolerance       1e-5;
+        relTol          0.0;
+        nSweeps         1;
+    }
+}
+
+PIMPLE
+{
+    // Typical transient PIMPLE options
+    nOuterCorrectors        1;    // outer (PIMPLE) loop - increase if coupling issues
+    nCorrectors             2;    // pressure-velocity correctors per outer
+    nNonOrthogonalCorrectors 1;   // 0..2 depending on mesh non-orthogonality
+    pRefCell                0;    // optional if you want explicit ref cell
+    pRefValue               0;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        U       0.3;
+        k       0.2;
+        omega   0.2;
+    }
+}
+
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 0;
+}
+

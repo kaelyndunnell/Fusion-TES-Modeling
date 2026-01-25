@@ -14,11 +14,11 @@ cd Fusion-TES-Modeling
 Run this command to create a new environment with the right dependencies:
 
 ```
-conda env create -f environment.yml 
+mamba env create -f environment.yml 
 ```
 
 Then, activate the environment: 
 
 ```
-conda activate tes-model-env
+mamba activate tes-model-env
 ```
