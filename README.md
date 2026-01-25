@@ -22,3 +22,20 @@ Then, activate the environment:
 ```
 mamba activate tes-model-env
 ```
+
+Now, you can install CADquery and its dependencies,
+
+```
+mamba install -c conda-forge -c cadquery cadquery=master
+pip install jupyter-cadquery
+pip install cadquery-ocp==7.7.2.0
+pip install path.py
+```
+
+Any CADing to be done with CADQuery can now be accomplished. CADQuery requires a clean environment to be installed properly with conda. 
+
+To install the remaining dependencies, run,
+
+```
+bash environment.sh
+```
