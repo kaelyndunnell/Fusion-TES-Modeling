@@ -8,7 +8,7 @@ gmsh.option.setString(
 )  # make sure gmsh reads .step file in mm, what CADQuery exports in
 gmsh.model.add("tes-model")
 
-cad_file_path = "meshing/CAD/tes.step"
+cad_file_path = "meshing/CAD/tes_openfoam.step"
 
 entities = gmsh.model.occ.importShapes(cad_file_path)
 gmsh.model.occ.synchronize()
@@ -146,6 +146,6 @@ gmsh.model.occ.synchronize()
 gmsh.model.mesh.generate(3)
 
 ##### SAVE MESH #####
-output_file = "meshing/tes.msh"
+output_file = "meshing/tes_openfoam.msh"
 gmsh.write(output_file)
 gmsh.finalize()
