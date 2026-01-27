@@ -3,10 +3,7 @@ import gmsh
 ##### LOAD CAD AND INITIALIZE MESH #####
 
 gmsh.initialize()
-gmsh.option.setString(
-    "Geometry.OCCTargetUnit", "MM"
-)  # make sure gmsh reads .step file in mm, what CADQuery exports in
-gmsh.model.add("tes-model")
+gmsh.model.add("tes-model")  # reading cadquery file as if in M
 
 cad_file_path = "meshing/CAD/tes_openfoam.step"
 
