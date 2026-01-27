@@ -141,7 +141,7 @@ gmsh.model.mesh.field.setNumber(
 gmsh.model.mesh.field.setAsBackgroundMesh(threshold_field)
 
 ##### SYNC & GENERATE MESH #####
-# gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
+gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
 gmsh.model.occ.synchronize()
 gmsh.model.mesh.generate(3)
 
