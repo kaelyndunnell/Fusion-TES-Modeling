@@ -11,31 +11,31 @@ git clone https://github.com/kaelyndunnell/Fusion-TES-Modeling
 cd Fusion-TES-Modeling
 ```
 
-Run this command to create a new environment with the right dependencies:
+This package requires two environments to run, one for CADQuery and one for OpenFOAM/FESTIM. To set up a new environment with the right dependencies for CADQuery, use: 
+
+Then, set up a new environment with the right dependencies (e.g. dolfinx, FESTIM) using:
 
 ```
-mamba env create -f environment.yml 
+mamba create -f cadquery_env.yml 
 ```
 
-Then, activate the environment: 
+Then, activate the environment to use CADQuery for geometry creation: 
 
 ```
-mamba activate tes-model-env
+mamba activate cadquery-env
 ```
 
-Now, you can install CADquery and its dependencies,
-
+Deactive the environment using 
 ```
-mamba install -c conda-forge -c cadquery cadquery=master
-pip install jupyter-cadquery
-pip install cadquery-ocp==7.7.2.0
-pip install path.py
+conda deactivate
 ```
 
-Any CADing to be done with CADQuery can now be accomplished. CADQuery requires a clean environment to be installed properly with conda. 
-
-To install the remaining dependencies, run,
-
+and set up a second environment with the right meshing, OpenFOAM, and FESTIM dependencies with: 
 ```
-bash environment.sh
+conda env create -f environment.yml
+```
+
+Activate this environment using 
+```
+conda activate tes-pav-env
 ```
