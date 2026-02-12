@@ -53,7 +53,6 @@ def calculate_LiPb_kinematic_viscosity(
 
 breeder = "LiPb"
 
-flow_rate = 1  # kg/s ; from Utili 2023
 inlet_diameter = 0.13  # m from CAD
 
 breeder_temperature = 603.15  # K from Utili 2023
@@ -67,9 +66,7 @@ LiPb_diffusivity = 4.03e-8 * np.exp(
     -E_D / (k_b * breeder_temperature)
 )  # m2/s ; from Utili 2023, 1 J/mol = 1.0364E-5eV
 
-inlet_velocity = calculate_inlet_velocity(
-    flow_rate, inlet_diameter, LiPb_density, breeder, suppress_print=False
-)
+inlet_velocity = 0.5  # m/s, https://doi.org/10.1016/j.jnucmat.2022.153985
 
 kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
     breeder_temperature, LiPb_density, breeder, suppress_print=True
