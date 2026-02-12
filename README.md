@@ -30,7 +30,7 @@ Deactive the environment using
 conda deactivate
 ```
 
-and set up a second environment with the right meshing, OpenFOAM, and FESTIM dependencies with: 
+and set up a second environment with the right meshing, OpenFOAM (Foundation v13), and FESTIM dependencies with: 
 ```
 conda env create -f environment.yml
 ```
