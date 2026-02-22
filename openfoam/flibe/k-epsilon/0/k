@@ -1,0 +1,45 @@
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      k;
+}
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform 0.027;
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 0.027;
+    }
+    outlet
+    {
+        type            zeroGradient;
+    }
+    vacuum
+    {
+        type            kqRWallFunction;
+        value           uniform 0.027;
+    }
+    inlet_tank
+    {
+        type            kqRWallFunction;
+        value           uniform 0.027;
+    }
+    outlet_tank
+    {
+        type            kqRWallFunction;
+        value           uniform 0.027;
+    }
+    mixing_tank
+    {
+        type            kqRWallFunction;
+        value           uniform 0.027;
+    }
+}
+
