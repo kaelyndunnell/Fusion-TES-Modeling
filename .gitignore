@@ -13,6 +13,7 @@
 *.sln.docstates
 *.env
 *.foam
+*.vscode
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
