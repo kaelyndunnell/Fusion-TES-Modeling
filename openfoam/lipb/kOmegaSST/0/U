@@ -1,0 +1,64 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    inlet
+    {
+        type            codedFixedValue;
+        value           uniform (0 0 0.0076);
+
+        name            parabolicVelocity;
+
+        code
+        #{
+            const vectorField& Cf = patch().Cf();
+            vectorField& field = *this;
+
+            const scalar yc = -1.36; 
+            const scalar xc = 0.55; 
+            const scalar r = 0.35;
+            const scalar Umax = 0.0076;
+
+
+            forAll(Cf, faceI)
+            {
+                const scalar x = Cf[faceI][0];
+                const scalar y = Cf[faceI][1];  // flow is in -z, so x-y is cross-section
+                const scalar rCoord = sqrt(pow(x - xc, 2) + pow(y - yc, 2));
+
+                field[faceI] = vector(0, 0, - Umax * (1 - 0.5 * pow(rCoord / r, 2)));
+
+            }
+        #};
+    }
+    outlet
+    {
+        type            zeroGradient;
+    }
+    vacuum
+    {
+        type            noSlip;
+    }
+    inlet_tank
+    {
+        type            noSlip;
+    }
+    outlet_tank
+    {
+        type            noSlip;
+    }
+    mixing_tank
+    {
+        type            noSlip;
+    }
+}
