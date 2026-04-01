@@ -21,19 +21,7 @@ boundaryField
     {
         type            zeroGradient; 
     }
-    vacuum
-    {
-        type            zeroGradient;
-    }
-    inlet_tank
-    {
-        type            zeroGradient;
-    }
-    outlet_tank
-    {
-        type            zeroGradient;
-    }
-    mixing_tank
+    walls
     {
         type            zeroGradient;
     }

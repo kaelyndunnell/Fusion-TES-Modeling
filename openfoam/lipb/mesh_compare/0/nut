@@ -22,22 +22,7 @@ boundaryField
         type            calculated;
         value           uniform 0;
     }
-    vacuum
-    {
-        type            nutkWallFunction;
-        value           uniform 0;
-    }
-    inlet_tank
-    {
-        type            nutkWallFunction;
-        value           uniform 0;
-    }
-    outlet_tank
-    {
-        type            nutkWallFunction;
-        value           uniform 0;
-    }
-    mixing_tank
+    walls
     {
         type            nutkWallFunction;
         value           uniform 0;

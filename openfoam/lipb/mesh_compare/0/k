@@ -21,22 +21,7 @@ boundaryField
     {
         type            zeroGradient;
     }
-    vacuum
-    {
-        type            kqRWallFunction;
-        value           uniform 0.000937;
-    }
-    inlet_tank
-    {
-        type            kqRWallFunction;
-        value           uniform 0.000937;
-    }
-    outlet_tank
-    {
-        type            kqRWallFunction;
-        value           uniform 0.000937;
-    }
-    mixing_tank
+    walls
     {
         type            kqRWallFunction;
         value           uniform 0.000937;

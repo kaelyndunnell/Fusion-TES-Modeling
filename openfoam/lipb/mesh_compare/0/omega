@@ -29,22 +29,7 @@ boundaryField
     {
         type            zeroGradient;
     }
-    vacuum
-    {
-        type            omegaWallFunction;
-        value           uniform 0.43;
-    }
-    inlet_tank
-    {
-        type            omegaWallFunction;
-        value           uniform 0.43;
-    }
-    outlet_tank
-    {
-        type            omegaWallFunction;
-        value           uniform 0.43;
-    }
-    mixing_tank
+    walls
     {
         type            omegaWallFunction;
         value           uniform 0.43;

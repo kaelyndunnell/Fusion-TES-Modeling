@@ -45,19 +45,7 @@ boundaryField
     {
         type            zeroGradient;
     }
-    vacuum
-    {
-        type            noSlip;
-    }
-    inlet_tank
-    {
-        type            noSlip;
-    }
-    outlet_tank
-    {
-        type            noSlip;
-    }
-    mixing_tank
+    walls
     {
         type            noSlip;
     }
