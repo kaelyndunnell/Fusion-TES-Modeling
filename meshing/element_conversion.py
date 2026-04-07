@@ -1,8 +1,9 @@
-import sys
 import meshio
 import numpy as np
-import gmsh
 
+### SCRIPT TO CONVERT ONE VOLUME MIXED ELEMENT MESH PRODUCED WITH CUBIT TO A ONE ELEMENT (TETS-ONLY) MESH FOR OPENFOAM ###
+
+# openfoam one vol paths
 mesh_file_path = "meshing/CAD/mixed_mesh.e"
 write_path = "meshing/tes_openfoam.msh"
 
