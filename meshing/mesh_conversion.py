@@ -16,7 +16,7 @@ def convert_mesh(openfoam: bool):
         write_path = "meshing/tes_openfoam.msh"
     else:
         # festim two vols paths
-        mesh_file_path = "meshing/CAD/tes_openfoam.msh"
+        mesh_file_path = "meshing/CAD/simple_two_vols.e"
         write_path = "meshing/tes_festim.msh"
 
     mesh = meshio.read(mesh_file_path)
@@ -43,11 +43,11 @@ def convert_mesh(openfoam: bool):
         physical_groups = {  # ids start from 0 here but 1 in cubit
             0: (1, "fluid", 3),
             1: (2, "membrane", 3),
-            2: (3, "outlet", 2),
-            3: (4, "inlet", 2),
+            2: (3, "inlet", 2),
+            3: (4, "outlet", 2),
             4: (5, "walls", 2),
-            5: (6, "interface", 2),
-            6: (7, "vacuum", 2),
+            5: (6, "vacuum", 2),
+            6: (7, "interface", 2),
         }
 
     # SURFACES
