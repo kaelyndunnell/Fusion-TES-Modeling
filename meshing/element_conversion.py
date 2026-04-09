@@ -4,7 +4,7 @@ import numpy as np
 ### SCRIPT TO CONVERT ONE VOLUME MIXED ELEMENT MESH PRODUCED WITH CUBIT TO A ONE ELEMENT (TETS-ONLY) MESH FOR OPENFOAM ###
 
 # openfoam one vol paths
-mesh_file_path = "meshing/CAD/mixed_mesh.e"
+mesh_file_path = "meshing/CAD/test_mesh.e"
 write_path = "meshing/tes_openfoam.msh"
 
 mesh = meshio.read(mesh_file_path)
@@ -26,6 +26,25 @@ WEDGE_TO_TETS = np.array(  # conversion array to make wedges --> tets (3 tets pe
     ],
     dtype=np.int64,
 )
+
+PYRAMID_TO_TETS = (
+    np.array(  # conversion array to make pyramids --> tets (2 tets per pyramid)
+        [
+            [0, 1, 3, 4],
+            [1, 2, 3, 4],
+        ],
+        dtype=np.int64,
+    )
+)
+
+
+def pyramid_cells_to_tets(pyramid_conn: np.ndarray) -> np.ndarray:
+    """converts (n,5) pyramids to (n*2, 4) tets."""
+    n = pyramid_conn.shape[0]
+    tets = np.empty((n * 2, 4), dtype=np.int64)
+    for i, local in enumerate(PYRAMID_TO_TETS):
+        tets[i::2] = pyramid_conn[:, local]
+    return tets
 
 
 def quad_to_tris(quad_conn: np.ndarray) -> np.ndarray:
@@ -50,19 +69,18 @@ def wedge_cells_to_tets(wedge_conn: np.ndarray) -> np.ndarray:
 
 points = mesh.points
 
-wedge_keys = {"wedge", "wedge6", "penta6"}
+wedge_keys = {"wedge", "WEDGE", "penta6"}
 tet_keys = {"tetra", "tetra4", "tet4"}
+pyramid_keys = {"pyramid"}
 tri_keys = {"triangle", "triangle3", "tri3"}
 surf_keys = {"triangle", "triangle3", "tri3", "quad"}
 
-# assigning names to each block idk from cubit
+# assigning names to each block idx from cubit
 physical_groups = {
     1: (1, "fluid", 3),
-    2: (2, "inlet", 2),
     3: (2, "inlet", 2),
     4: (3, "outlet", 2),
-    5: (3, "outlet", 2),
-    6: (4, "walls", 2),
+    5: (5, "walls", 2),
 }
 
 # SURFACES
@@ -110,9 +128,9 @@ for block_idx, cell_block in enumerate(mesh.cells):
     data = cell_block.data
     n = len(data)
 
-    def get_vol_tag():  # wedges are given id 0 and tets are given id 1, manually setting all vol ids as 1 as in cubit
-        if block_idx == 0:
-            return np.full(len(data), block_idx + 1, dtype=np.int32)
+    def get_vol_tag():  # wedges are given id 0, tets are given id 1, pyramids are given as 2, manually setting all vol ids as 1 as in cubit
+        if block_idx != 1:
+            return np.full(len(data), 1, dtype=np.int32)
         else:
             return np.full(len(data), block_idx, dtype=np.int32)
 
@@ -125,11 +143,19 @@ for block_idx, cell_block in enumerate(mesh.cells):
     elif ctype in wedge_keys:
         phys = get_vol_tag()
         converted = wedge_cells_to_tets(data)
-        phys_rep = np.repeat(
-            phys, 3
-        )  # convert each wedge to 3 tets, have to repeat this in these objects
+        phys_rep = np.repeat(phys, 3)  # convert each wedge to 3 tets
         print(
             f"found {len(data)} wedges --> converted to {len(converted)} tets (in block {phys[0]})."
+        )
+        all_tets.append(converted)
+        all_tet_phys.append(phys_rep)
+
+    elif ctype in pyramid_keys:
+        phys = get_vol_tag()
+        converted = pyramid_cells_to_tets(data)
+        phys_rep = np.repeat(phys, 2)  # convert each pyramid to 2 tets
+        print(
+            f"found {len(data)} pyramids --> converted to {len(converted)} tets (in block {phys[0]})."
         )
         all_tets.append(converted)
         all_tet_phys.append(phys_rep)
