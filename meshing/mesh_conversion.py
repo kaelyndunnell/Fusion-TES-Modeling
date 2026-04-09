@@ -12,11 +12,11 @@ def convert_mesh(openfoam: bool):
 
     if openfoam:
         # openfoam one vol path
-        mesh_file_path = "meshing/CAD/simple.e"
+        mesh_file_path = "meshing/CAD/cubit_files/simple.e"
         write_path = "meshing/tes_openfoam.msh"
     else:
         # festim two vols paths
-        mesh_file_path = "meshing/CAD/simple_two_vols.e"
+        mesh_file_path = "meshing/CAD/cubit_files/simple_two_vols.e"
         write_path = "meshing/tes_festim.msh"
 
     mesh = meshio.read(mesh_file_path)
