@@ -5,6 +5,7 @@
 
 .DS_Store
 **_results/
+cubit_files/
 
 # User-specific files
 *.rsuser
