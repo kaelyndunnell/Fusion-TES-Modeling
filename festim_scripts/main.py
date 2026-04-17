@@ -332,9 +332,7 @@ def build_festim_model(
     concentration_field_probe = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_membrane.bp", field=T, subdomain=membrane
     )
-    c_out = F.TotalSurface(
-        field=T, surface=outlet, filename=f"{results_folder}/c_out.csv"
-    )
+    c_out = F.TotalSurface(field=T, surface=outlet)
     c_in = F.TotalSurface(field=T, surface=inlet, filename=f"{results_folder}/c_in.csv")
 
     permeation_flux = F.SurfaceFlux(
@@ -349,12 +347,12 @@ def build_festim_model(
         permeation_flux,
     ]
 
-    return my_model
+    return my_model, c_out
 
 
 if __name__ == "__main__":
 
-    my_model = build_festim_model(
+    my_model, c_out = build_festim_model(
         c_inlet=1e20,
         residual_pressure=0,
         breeder="flibe",
