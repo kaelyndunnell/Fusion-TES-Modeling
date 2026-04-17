@@ -344,12 +344,12 @@ def build_festim_model(
         permeation_flux,
     ]
 
-    return my_model, c_out
+    return my_model
 
 
 if __name__ == "__main__":
 
-    my_model, c_out = build_festim_model(
+    my_model = build_festim_model(
         c_inlet=1e20,
         residual_pressure=0,
         breeder="flibe",
