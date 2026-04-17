@@ -6,7 +6,8 @@
 .DS_Store
 **_results/
 cubit_files/
-velocity_parametrization/
+flibe/
+lipb/
 *.vscode
 
 # User-specific files
