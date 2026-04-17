@@ -6,8 +6,8 @@ from fluid_parameters import (
     calculate_initial_omega,
 )
 import numpy as np
-
-# import h_transport_materials as htm
+import festim as F
+import h_transport_materials as htm
 
 
 def calculate_FLiBe_kinematic_viscosity(
@@ -59,11 +59,11 @@ inlet_diameter = 0.13  # m from CAD
 
 k_b = F.k_B  # eV/K, boltzmann constant
 
-# flibe_diffusivity = htm.diffusivities.filter(material=htm.FLIBE).mean()
-# E_D = flibe_diffusivity.act_energy.magnitude  # eV
-# D_0 = flibe_diffusivity.pre_exp.magnitude  # m2/s
+flibe_diffusivity = htm.diffusivities.filter(material=htm.FLIBE).mean()
+E_D = flibe_diffusivity.act_energy.magnitude  # eV
+D_0 = flibe_diffusivity.pre_exp.magnitude  # m2/s
 
-# FLiBe_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
+FLiBe_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
 
 inlet_velocity = 3  # m/s
 
@@ -83,6 +83,6 @@ print(f"Initial turbulence kinetic energy for {breeder}: {k} m2/s2")
 print(f"Initial turbulence dissipation rate for {breeder}: {epsilon} m2/s3")
 print(f"Initial specific dissipation rate for {breeder}: {omega} 1/s")
 
-plot_reynolds_number_vs_inlet_velocity(
-    inlet_diameter, kinematic_viscosity, breeder_temperature, breeder, inlet_velocity
-)
+# plot_reynolds_number_vs_inlet_velocity(
+#     inlet_diameter, kinematic_viscosity, breeder_temperature, breeder, inlet_velocity
+# )

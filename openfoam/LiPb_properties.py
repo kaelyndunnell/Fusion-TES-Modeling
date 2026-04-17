@@ -93,6 +93,6 @@ print(f"Initial turbulence kinetic energy for {breeder}: {k} m2/s2")
 print(f"Initial turbulence dissipation rate for {breeder}: {epsilon} m2/s3")
 print(f"Initial specific dissipation rate for {breeder}: {omega} 1/s")
 
-plot_reynolds_number_vs_inlet_velocity(
-    inlet_diameter, kinematic_viscosity, breeder_temperature, breeder, inlet_velocity
-)
+# plot_reynolds_number_vs_inlet_velocity(
+#     inlet_diameter, kinematic_viscosity, breeder_temperature, breeder, inlet_velocity
+# )
