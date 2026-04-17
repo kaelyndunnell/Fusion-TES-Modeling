@@ -4,6 +4,9 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 .DS_Store
+**_results/
+cubit_files/
+velocity_parametrization/
 
 # User-specific files
 *.rsuser
