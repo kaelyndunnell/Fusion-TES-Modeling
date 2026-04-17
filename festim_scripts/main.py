@@ -1,8 +1,7 @@
 import festim as F  # using festim2
 import numpy as np
-from scifem import assemble_scalar
 from dolfinx import fem
-from dolfinx.io import VTXWriter, XDMFFile
+from dolfinx.io import VTXWriter
 import ufl
 from dolfinx import cpp as _cpp
 from openfoam_to_festim import read_openfoam_data
@@ -11,8 +10,6 @@ from dolfinx.io import gmsh as gmshio
 from mpi4py import MPI
 from basix.ufl import element
 import h_transport_materials as htm
-from dolfinx.io import XDMFFile
-from mpi4py import MPI
 
 
 def evaluate_stabalisation_term(mesh, u, delta):
