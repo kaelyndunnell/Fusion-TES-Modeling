@@ -14,6 +14,7 @@ for i in $(seq 1 0.2 3.2); do # velocities, m/s
     cd ..
     cd ..
     python3 change_patch_names.py --breeder "flibe" --velocity $i
+    echo "Wall "patch" changed to "wall""
 
     cd flibe/vel_${i}
 
