@@ -332,15 +332,13 @@ def build_festim_model(
     c_out = F.TotalSurface(field=T, surface=outlet)
     c_in = F.TotalSurface(field=T, surface=inlet, filename=f"{results_folder}/c_in.csv")
 
-    permeation_flux = F.SurfaceFlux(
-        field=T, surface=vacuum, filename=f"{results_folder}/permeation_flux.csv"
-    )
+    permeation_flux = F.SurfaceFlux(field=T, surface=vacuum)
 
     my_model.exports = [
         c_out,
-        c_in,
-        concentration_field_breeder,
-        concentration_field_probe,
+        # c_in,
+        # concentration_field_breeder,
+        # concentration_field_probe,
         permeation_flux,
     ]
 
@@ -353,8 +351,8 @@ if __name__ == "__main__":
         c_inlet=1e20,
         residual_pressure=0,
         breeder="flibe",
-        openfoam_data_file="openfoam/lipb_simple/tes.foam",  # TODO: CHANGE THIS
-        openfoam_final_time=5600,
+        openfoam_data_file="openfoam/flibe_simple/tes.foam",
+        openfoam_final_time=1430,
         festim_mesh_file="meshing/test_festim.msh",
         results_folder="flibe_festim_results/benchmark",
     )
