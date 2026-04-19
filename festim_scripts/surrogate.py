@@ -16,8 +16,8 @@ class FestimProblem(Simulator):
             c_inlet=c_in,
             residual_pressure=residual_pressure,
             breeder="flibe",
-            openfoam_data_file="openfoam/lipb_simple/tes.foam",  # TODO: CHANGE THIS
-            openfoam_final_time=5600,
+            openfoam_data_file="openfoam/flibe_simple/tes.foam",
+            openfoam_final_time=1430,
             festim_mesh_file="meshing/test_festim.msh",
             results_folder=f"flibe_festim_results/inlet_{c_in}_pressure_{residual_pressure}",
         )
@@ -40,16 +40,16 @@ class FestimProblem(Simulator):
 
 
 simulator = FestimProblem(
-    parameters_range={"c_in": (0.0, 10.0), "residual_pressure": (0.0, 10.0)},
+    parameters_range={
+        "c_in": (1e15, 1e25),
+        "residual_pressure": (0.0, 0.0),
+    },  # ranges for each variable
     output_names=["c_out", "permeation_flux"],
 )
-
-simulator.forward(torch.tensor([[0.0, 3.0]]))
 
 n_samples = 2
 
 X = simulator.sample_inputs(n_samples)
-
 
 Y, _ = simulator.forward_batch(X, allow_failures=False)
 
