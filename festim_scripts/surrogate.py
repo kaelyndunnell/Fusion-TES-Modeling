@@ -1,7 +1,8 @@
 from autoemulate.simulations.base import Simulator
 import torch
 import festim as F
-from main import build_festim_model
+from mwe import build_festim_model
+from autoemulate import AutoEmulate
 
 
 class FestimProblem(Simulator):
@@ -14,12 +15,12 @@ class FestimProblem(Simulator):
         residual_pressure = residual_pressure.item()
         model = build_festim_model(
             c_inlet=c_in,
-            residual_pressure=residual_pressure,
-            breeder="flibe",
-            openfoam_data_file="openfoam/flibe_simple/tes.foam",
-            openfoam_final_time=1430,
-            festim_mesh_file="meshing/test_festim.msh",
-            results_folder=f"flibe_festim_results/inlet_{c_in}_pressure_{residual_pressure}",
+            # residual_pressure=residual_pressure,
+            # breeder="flibe",
+            # openfoam_data_file="openfoam/flibe_simple/tes.foam",
+            # openfoam_final_time=1430,
+            # festim_mesh_file="meshing/test_festim.msh",
+            # results_folder=f"flibe_festim_results/inlet_{c_in}_pressure_{residual_pressure}",
         )
 
         # solve the model
@@ -39,6 +40,7 @@ class FestimProblem(Simulator):
         return y
 
 
+# set up model
 simulator = FestimProblem(
     parameters_range={
         "c_in": (1e15, 1e25),
@@ -47,10 +49,17 @@ simulator = FestimProblem(
     output_names=["c_out", "permeation_flux"],
 )
 
-n_samples = 2
+# training data
+n_samples = 20
 
 X = simulator.sample_inputs(n_samples)
-
 Y, _ = simulator.forward_batch(X, allow_failures=False)
 
-print(Y)
+# train the model
+ae = AutoEmulate(X, Y, log_level="info")
+emulator = [r for r in ae.results if r.model_name == "GaussianProcessRBF"][0]
+
+print(f"Selected model: {emulator.model_name} with id: {emulator.id}")
+
+# plotting
+# ae.plot_preds(emulator, output_names=simulator.output_names) # TODO: add plotting visualization that works
