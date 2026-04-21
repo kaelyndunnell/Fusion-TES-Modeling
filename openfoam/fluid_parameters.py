@@ -120,6 +120,7 @@ def plot_reynolds_number_vs_inlet_velocity(
     breeder_temperature,
     breeder,
     model_velocity,
+    flibe=False,
 ):
     """Plot the reynolds number of a fluid breeder with varying inlet velocities.
     Assumes constant characteristic length and kinematic viscosity.
@@ -135,7 +136,11 @@ def plot_reynolds_number_vs_inlet_velocity(
      breeder : str
         Breeder fluid name.
     """
-    inlet_velocities = np.linspace(0, 1e-2, 100000)  # m/s
+    if flibe:
+        inlet_velocities = np.linspace(0, 0.5, 100000)  # m/s
+
+    else:
+        inlet_velocities = np.linspace(0, 1e-2, 100000)  # m/s
     Re_numbers = []
 
     for inlet_velocity in inlet_velocities:  # m/s
