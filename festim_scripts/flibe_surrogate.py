@@ -85,7 +85,7 @@ class FestimProblem(Simulator):
         # RUN OPENFOAM MODEL
         subprocess.run(
             [
-                "openfoam/velocity_parametrization/run_flibe_case.sh",
+                "openfoam/velocity_parametrization/run_single_case.sh",
                 "-p " + openfoam_folder,  # case pathway
                 "-b " + breeder,  # breeder
                 "-v " + str(v_in),  # velocity
