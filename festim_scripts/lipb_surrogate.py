@@ -1,47 +1,27 @@
 from autoemulate.simulations.base import Simulator
 import torch
 import festim as F
-from mwe import build_festim_model
+from main import build_festim_model
 from autoemulate import AutoEmulate
-from openfoam.parametrize_velocity import change_variable_in_openfoam_file
+import os
+import sys
+import h_transport_materials as htm
+import numpy as np
+import shutil
+import subprocess
+
+# add openfoam/ to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+sys.path.append(parent_dir)
+
 from openfoam.LiPb_properties import (
     calculate_LiPb_kinematic_viscosity,
     calculate_initial_k,
     calculate_initial_omega,
     calculate_reynolds_number,
 )
-import h_transport_materials as htm
-import numpy as np
-import os
-import shutil
-import subprocess
-
-# CONSTANT PARAMETERS
-inlet_diameter = 9e-3  # m from CAD
-k_b = F.k_B  # eV/K, boltzmann constant
-
-# breeder parameters
-breeder = "lipb"
-breeder_temperature = 603.15  # K from Utili 2023
-LiPb_density = (
-    10520.35 - 1.19051 * breeder_temperature
-)  # kg/m3 ; equation from Martelli 2019
-
-lipb_diffusivity = (
-    htm.diffusivities.filter(material=htm.LIPB)
-    .filter(exclude=True, isotope="H")
-    .filter(exclude=True, isotope="D")
-    .mean()
-)
-E_D = lipb_diffusivity.act_energy.magnitude  # eV
-D_0 = lipb_diffusivity.pre_exp.magnitude  # m2/s
-LiPb_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
-
-kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
-    breeder_temperature, LiPb_density, breeder, suppress_print=True
-)
-
-# breeder parameters
+from openfoam.change_variable_openfoam import change_variable_in_openfoam_file
 
 
 class FestimProblem(Simulator):
@@ -136,6 +116,31 @@ class FestimProblem(Simulator):
         return y
 
 
+# BREEDER/OPENFOAM PARAMETERS
+inlet_diameter = 9e-3  # m from CAD
+k_b = F.k_B  # eV/K, boltzmann constant
+
+# breeder parameters
+breeder = "lipb"
+breeder_temperature = 603.15  # K from Utili 2023
+LiPb_density = (
+    10520.35 - 1.19051 * breeder_temperature
+)  # kg/m3 ; equation from Martelli 2019
+
+lipb_diffusivity = (
+    htm.diffusivities.filter(material=htm.LIPB)
+    .filter(exclude=True, isotope="H")
+    .filter(exclude=True, isotope="D")
+    .mean()
+)
+E_D = lipb_diffusivity.act_energy.magnitude  # eV
+D_0 = lipb_diffusivity.pre_exp.magnitude  # m2/s
+LiPb_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
+
+kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
+    breeder_temperature, LiPb_density, breeder, suppress_print=True
+)
+
 # set up model
 simulator = FestimProblem(
     parameters_range={
@@ -147,7 +152,7 @@ simulator = FestimProblem(
 )
 
 # training data
-n_samples = 20
+n_samples = 2
 
 X = simulator.sample_inputs(n_samples)
 Y, _ = simulator.forward_batch(X, allow_failures=False)

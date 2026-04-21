@@ -1,40 +1,27 @@
 from autoemulate.simulations.base import Simulator
 import torch
 import festim as F
-from mwe import build_festim_model
+from main import build_festim_model
 from autoemulate import AutoEmulate
-from openfoam.parametrize_velocity import change_variable_in_openfoam_file
+import h_transport_materials as htm
+import numpy as np
+import os
+import sys
+import shutil
+import subprocess
+
+# add openfoam/ to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+sys.path.append(parent_dir)
+
 from openfoam.FLiBe_properties import (
     calculate_FLiBe_kinematic_viscosity,
     calculate_initial_k,
     calculate_initial_omega,
     calculate_reynolds_number,
 )
-import h_transport_materials as htm
-import numpy as np
-import os
-import shutil
-import subprocess
-
-# CONSTANT PARAMETERS
-inlet_diameter = 9e-3  # m from CAD
-k_b = F.k_B  # eV/K, boltzmann constant
-
-# breeder parameters
-breeder = "flibe"
-breeder_temperature = 900  # K from Meschini 2021
-FLiBe_density = 2245 - 0.424 * (
-    breeder_temperature - 273.15
-)  # kg/m3 ; equation from Vidrio 2022
-flibe_diffusivity = htm.diffusivities.filter(material=htm.FLIBE).mean()
-E_D = flibe_diffusivity.act_energy.magnitude  # eV
-D_0 = flibe_diffusivity.pre_exp.magnitude  # m2/s
-
-FLiBe_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
-
-kinematic_viscosity = calculate_FLiBe_kinematic_viscosity(
-    breeder_temperature, FLiBe_density, breeder
-)
+from openfoam.change_variable_openfoam import change_variable_in_openfoam_file
 
 
 class FestimProblem(Simulator):
@@ -128,6 +115,26 @@ class FestimProblem(Simulator):
 
         return y
 
+
+# BREEDER/OPENFOAM PARAMETERS
+inlet_diameter = 9e-3  # m from CAD
+k_b = F.k_B  # eV/K, boltzmann constant
+
+# breeder parameters
+breeder = "flibe"
+breeder_temperature = 900  # K from Meschini 2021
+FLiBe_density = 2245 - 0.424 * (
+    breeder_temperature - 273.15
+)  # kg/m3 ; equation from Vidrio 2022
+flibe_diffusivity = htm.diffusivities.filter(material=htm.FLIBE).mean()
+E_D = flibe_diffusivity.act_energy.magnitude  # eV
+D_0 = flibe_diffusivity.pre_exp.magnitude  # m2/s
+
+FLiBe_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
+
+kinematic_viscosity = calculate_FLiBe_kinematic_viscosity(
+    breeder_temperature, FLiBe_density, breeder
+)
 
 # set up model
 simulator = FestimProblem(

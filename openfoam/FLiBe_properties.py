@@ -1,4 +1,4 @@
-from fluid_parameters import (
+from .fluid_parameters import (
     calculate_reynolds_number,
     plot_reynolds_number_vs_inlet_velocity,
     calculate_initial_k,
