@@ -10,6 +10,8 @@ from dolfinx.io import gmsh as gmshio
 from mpi4py import MPI
 from basix.ufl import element
 import h_transport_materials as htm
+import os
+import re
 
 
 def evaluate_stabalisation_term(mesh, u, delta):
@@ -35,20 +37,33 @@ def evaluate_stabalisation_term(mesh, u, delta):
     return D_art
 
 
+def findDir(basePath):
+    names = []
+    for root, dirs, files in os.walk(basePath):
+        for name in dirs:
+            try:
+                if re.match(r"\d", name):
+                    names.append(int(name))
+            except:
+                continue
+    return np.max(names)
+
+
 def build_festim_model(
     c_inlet,
     residual_pressure,
     breeder,
-    openfoam_data_file,
-    openfoam_final_time,
+    openfoam_data_folder,
     festim_mesh_file,
     results_folder,
     visualize_fields=True,
 ):
 
     # READ OPENFOAM MESH
+    openfoam_final_time = findDir(openfoam_data_folder)
+
     p, u, openfoam_mesh, nut, facet_meshtags, volume_meshtags = read_openfoam_data(
-        openfoam_data_file, final_time=openfoam_final_time
+        openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
     )
 
     # READ GMSH MESH
@@ -355,8 +370,7 @@ if __name__ == "__main__":
         c_inlet=1e20,
         residual_pressure=0,
         breeder="flibe",
-        openfoam_data_file="openfoam/flibe_simple/tes.foam",
-        openfoam_final_time=1430,
+        openfoam_data_folder="openfoam/flibe_simple",
         festim_mesh_file="meshing/test_festim.msh",
         results_folder="flibe_festim_results/benchmark",
     )

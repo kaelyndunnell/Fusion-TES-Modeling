@@ -38,7 +38,10 @@ cd ..
 python3 change_patch_names.py --breeder $breeder --velocity $v_in
 echo "Wall "patch" changed to "wall""
 
-cd $breeder/vel_$v_in 
+cd $breeder
+
+v_in=$(echo "$v_in" | xargs)
+cd "vel_$v_in"
 
 foamRun -solver incompressibleFluid
 
