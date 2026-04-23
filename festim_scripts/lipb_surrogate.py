@@ -9,6 +9,7 @@ import h_transport_materials as htm
 import numpy as np
 import shutil
 import subprocess
+import matplotlib.pyplot as plt
 
 # add openfoam/ to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -164,4 +165,6 @@ emulator = [r for r in ae.results if r.model_name == "GaussianProcessRBF"][0]
 print(f"Selected model: {emulator.model_name} with id: {emulator.id}")
 
 # plotting
-# ae.plot_preds(emulator, output_names=simulator.output_names) # TODO: add plotting visualization that works
+fig = ae.plot(emulator)
+fig.savefig("lipb_plot.png")
+plt.close(fig)
