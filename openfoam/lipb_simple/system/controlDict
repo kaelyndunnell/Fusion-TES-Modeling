@@ -28,7 +28,7 @@ deltaT          1;            // Time step (irrelevant for steady-state, but kep
 
 writeControl    timeStep;
 
-writeInterval   100;         // Write every 10 iterations
+writeInterval   1000;         // Write every 10 iterations
 
 purgeWrite      0;
 

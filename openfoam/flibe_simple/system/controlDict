@@ -18,7 +18,7 @@ application     incompressibleFluid;
 
 startFrom       latestTime;
 
-startTime       566;
+startTime       0;
 
 stopAt          endTime;
 
@@ -28,7 +28,7 @@ deltaT          1;            // Time step (irrelevant for steady-state, but kep
 
 writeControl    adjustableRunTime;
 
-writeInterval   100;         // Write every 10 iterations
+writeInterval   1000;         // Write every 10 iterations
 
 purgeWrite      0;
 

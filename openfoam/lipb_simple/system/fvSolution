@@ -74,7 +74,7 @@ SIMPLE
     {
         p               1e-5;
         U               1e-6;
-        "(k|epsilon|omega)" 1e-6;
+        "(k|epsilon|omega)" 1e-5;
     }
 }
 
@@ -87,9 +87,9 @@ relaxationFactors
 {
     equations
     {
-        U               0.1; 
-        p               0.1;
-        "(k|epsilon|omega)" 0.1;
+        U               0.5; 
+        p               0.3;
+        "(k|epsilon|omega)" 0.4;
     }
 }
 
