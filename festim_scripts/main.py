@@ -144,6 +144,7 @@ def build_festim_model(
             .filter(exclude=True, isotope="D")
             .mean()
         )
+        breeder_solubility_law = "HENRY"  # default is sievert's
         breeder_temperature = 900  # K
 
         # membrane material (SS316L for FLiBe)
@@ -161,12 +162,16 @@ def build_festim_model(
             .filter(exclude=True, isotope="D")
             .mean()
         )
+        membrane_solubility_law = "SIEVERT"
 
         membrane_recombo = htm.recombination_coeffs.filter(
             material=htm.STEEL_316L
         ).mean()
 
         membrane_diss = htm.dissociation_coeffs.filter(material=htm.STEEL_316L).mean()
+        penalty_term = 1e21
+
+        delta = 100
 
     elif breeder == "lipb":
         breeder_diffusivity = (
@@ -181,6 +186,7 @@ def build_festim_model(
             .filter(exclude=True, isotope="D")
             .mean()
         )
+        breeder_solubility_law = "SIEVERT"
         breeder_temperature = 603.15  # K
 
         # membrane material (Nb for LiPb)
@@ -192,6 +198,7 @@ def build_festim_model(
         )
 
         membrane_solubility = htm.solubilities.filter(material=htm.NIOBIUM)[0]
+        membrane_solubility_law = "SIEVERT"
 
         u = htm.ureg
         membrane_recombo = htm.RecombinationCoeff(
@@ -202,13 +209,20 @@ def build_festim_model(
 
         membrane_diss = htm.dissociation_coeffs.filter(material=htm.Metal).mean()
 
+        my_model.method_interface = F.InterfaceMethod.penalty
+        penalty_term = 1e25
+
+        delta = 1
+
     D_0_breeder = breeder_diffusivity.pre_exp.magnitude  # m2/s,
     E_D_breeder = breeder_diffusivity.act_energy.magnitude  # eV
 
     D_fick = D_0_breeder * ufl.exp(-E_D_breeder / (F.k_B * breeder_temperature))
 
     # add stabilization term for diffusion
-    D_art = evaluate_stabalisation_term(mesh=festim_mesh, u=festim_velocity, delta=1)
+    D_art = evaluate_stabalisation_term(
+        mesh=festim_mesh, u=festim_velocity, delta=delta
+    )
 
     # add turbulent diffusion term
     Sc = 0.7
@@ -244,8 +258,11 @@ def build_festim_model(
 
     breeder_material = F.Material(
         D=D_tot,
+        # D_0=D_0_breeder,
+        # E_D=E_D_breeder,
         K_S_0=breeder_solubility.pre_exp.magnitude,
         E_K_S=breeder_solubility.act_energy.magnitude,
+        solubility_law=breeder_solubility_law,
     )
 
     membrane_material = F.Material(
@@ -253,6 +270,7 @@ def build_festim_model(
         E_D=membrane_diffusivity.act_energy.magnitude,
         K_S_0=membrane_solubility.pre_exp.magnitude,
         E_K_S=membrane_solubility.act_energy.magnitude,
+        solubility_law=membrane_solubility_law,
     )
 
     # SET DOMAINS
@@ -296,12 +314,11 @@ def build_festim_model(
 
     interface_marker = 7
 
-    my_model.method_interface = F.InterfaceMethod.penalty
     my_model.interfaces = [
         F.Interface(
             id=interface_marker,
             subdomains=[breeder, membrane],
-            penalty_term=1e25,
+            penalty_term=penalty_term,
         ),
     ]
 
@@ -324,16 +341,14 @@ def build_festim_model(
 
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(subdomain=inlet, value=c_inlet, species=T),
-        vacuum_TT_rxn,
         # F.FixedConcentrationBC(subdomain=vacuum, value=0, species=T),
+        vacuum_TT_rxn,
     ]
 
     # SETTINGS
 
     my_model.settings = F.Settings(
-        atol=1e-10,
-        rtol=1e-10,
-        transient=False,
+        atol=1e10, rtol=1e-10, transient=False, max_iterations=100
     )
 
     # EXPORTS
@@ -341,24 +356,24 @@ def build_festim_model(
     concentration_field_breeder = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_breeder.bp", field=T, subdomain=breeder
     )
-    concentration_field_probe = F.VTXSpeciesExport(
+    concentration_field_membrane = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_membrane.bp", field=T, subdomain=membrane
-    )
-    c_out = F.TotalSurface(
-        field=T, surface=outlet, filename=f"{results_folder}/c_out.csv"
     )
     c_in = F.TotalSurface(field=T, surface=inlet, filename=f"{results_folder}/c_in.csv")
 
+    c_out = F.TotalSurface(
+        field=T, surface=outlet, filename=f"{results_folder}/c_out.csv"
+    )
     permeation_flux = F.SurfaceFlux(
         field=T, surface=vacuum, filename=f"{results_folder}/permeation_flux.csv"
     )
 
     my_model.exports = [
         c_out,
-        # c_in,
-        # concentration_field_breeder,
-        # concentration_field_probe,
         permeation_flux,
+        c_in,
+        concentration_field_breeder,
+        concentration_field_membrane,
     ]
 
     return my_model
