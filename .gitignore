@@ -9,6 +9,8 @@ cubit_files/
 flibe/
 lipb/
 *.vscode
+polyMesh/
+test/
 
 # User-specific files
 *.rsuser
