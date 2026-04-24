@@ -145,7 +145,7 @@ kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
 # set up model
 simulator = FestimProblem(
     parameters_range={
-        "v_in": (0.5, 3),
+        "v_in": (0.1, 2),
         "c_in": (1e15, 1e25),
         "residual_pressure": (0.0, 0.0),
     },  # ranges for each variable
@@ -153,7 +153,7 @@ simulator = FestimProblem(
 )
 
 # training data
-n_samples = 2
+n_samples = 20
 
 X = simulator.sample_inputs(n_samples)
 Y, _ = simulator.forward_batch(X, allow_failures=False)
