@@ -3,14 +3,14 @@
 helpFunction() 
 {
    echo ""
-   echo "Usage: $0 -p case_pathway -b -v v_in"
-   echo -e "\t-p Path to OpenFOAM case directory."
+   echo "Usage: $0 -p case_pathway -b -v v_in -t time"
+   echo -e "\t-p Path to pipe OpenFOAM case directory."
    echo -e "\t-b Breeder of simulation, lipb or flibe."
    echo -e "\t-v Breeder inlet velocity."
    exit 1 # exit script after printing help 
 }
 
-while getopts "p:b:v:" opt
+while getopts "p:d:b:v:t:" opt
 do
    case "$opt" in
       p ) case_pathway="$OPTARG" ;;
@@ -35,14 +35,23 @@ checkMesh
 
 cd ..
 cd ..
-python3 change_patch_names.py --breeder $breeder --velocity $v_in
+python3 change_patch_names.py --breeder $breeder --velocity $v_in --geometry "pipe"
 echo "Wall "patch" changed to "wall""
 
 cd $breeder
 
+parent_dir="$PWD"
 v_in=$(echo "$v_in" | xargs)
-cd "vel_$v_in"
+tank_path="$parent_dir/inlet_tank_${v_in}m_s"
 
+echo $tank_path
+
+cd "pipe_${v_in}m_s"
+
+mapFields $tank_path -sourceTime latestTime
+
+echo done
+ 
 foamRun -solver incompressibleFluid
 
 touch tes.foam

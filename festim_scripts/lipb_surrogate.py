@@ -1,7 +1,7 @@
 from autoemulate.simulations.base import Simulator
 import torch
 import festim as F
-from main import build_festim_model
+from main import build_festim_model, findDir
 from autoemulate import AutoEmulate
 import os
 import sys
@@ -25,6 +25,34 @@ from openfoam.LiPb_properties import (
 from openfoam.change_variable_openfoam import change_variable_in_openfoam_file
 
 
+def create_folders(
+    new_folder_path, bench_folder_path, openfoam_mesh, turbulent_variables_dict
+):
+    os.makedirs(new_folder_path, exist_ok=True)
+
+    shutil.copytree(
+        bench_folder_path + "/0/",
+        new_folder_path + "/0",
+    )  # p, nut files are the same as lipb simple case
+    shutil.copytree(
+        bench_folder_path + "/system/",
+        new_folder_path + "/system",
+    )
+    shutil.copytree(
+        bench_folder_path + "/constant/",
+        new_folder_path + "/constant",
+    )
+
+    for name, values in turbulent_variables_dict.items():
+        change_variable_in_openfoam_file(
+            filename=new_folder_path + "/0/" + name,
+            old_value=values[0],
+            new_value=values[1],
+        )
+
+    shutil.copy(openfoam_mesh, new_folder_path)
+
+
 class FestimProblem(Simulator):
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         v_in = x[:, 0]
@@ -39,49 +67,62 @@ class FestimProblem(Simulator):
         k = calculate_initial_k(v_in)
         omega = calculate_initial_omega(k, inlet_diameter)
 
-        openfoam_folder = f"openfoam/velocity_parametrization/{breeder}/vel_{v_in:.1f}"
-        os.makedirs(openfoam_folder, exist_ok=True)
-
-        shutil.copytree(
-            "openfoam/lipb_simple/0/",
-            openfoam_folder + "/0",
-        )  # p, nut files are the same as lipb simple case
-        shutil.copytree(
-            "openfoam/lipb_simple/system/",
-            openfoam_folder + "/system",
-        )
-        shutil.copytree(
-            "openfoam/lipb_simple/constant/",
-            openfoam_folder + "/constant",
-        )
-
         variables_dict = {
             "U": [0.5, v_in],
             "k": [0.000937, k],
             "omega": [0.43, omega],
         }
 
-        for name, values in variables_dict.items():
-            change_variable_in_openfoam_file(
-                filename=openfoam_folder + "/0/" + name,
-                old_value=values[0],
-                new_value=values[1],
-            )
+        # TANK PATHS
+        TANK_NEW_FOLDER = (
+            f"openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.1f}m_s"
+        )
+        TANK_BENCH_FOLDER = "openfoam/inlet_tank"
+        TANK_MESH = "meshing/inlet_tank.msh"
 
-        shutil.copy("meshing/tes_openfoam.msh", openfoam_folder)
+        # PIPE_PATHS
+        PIPE_NEW_FOLDER = f"openfoam/velocity_parametrization/lipb/pipe_{v_in:.1f}m_s"
+        PIPE_BENCH_FOLDER = "openfoam/lipb_simple"
+        PIPE_MESH = "meshing/tes_openfoam.msh"
+
+        # make tank folders
+        create_folders(
+            new_folder_path=TANK_NEW_FOLDER,
+            bench_folder_path=TANK_BENCH_FOLDER,
+            openfoam_mesh=TANK_MESH,
+            turbulent_variables_dict=variables_dict,
+        )
+
+        # make pipe folders
+        create_folders(
+            new_folder_path=PIPE_NEW_FOLDER,
+            bench_folder_path=PIPE_BENCH_FOLDER,
+            openfoam_mesh=PIPE_MESH,
+            turbulent_variables_dict=variables_dict,
+        )
+
+        # RUN OPENFOAM TANK MODEL
+        subprocess.run(
+            [
+                "openfoam/velocity_parametrization/run_tank_case.sh",
+                "-p " + TANK_NEW_FOLDER,  # case pathway
+                "-b " + breeder,  # breeder
+                "-v " + str(v_in),  # velocity
+            ]
+        )
 
         # RUN OPENFOAM MODEL
         subprocess.run(
             [
-                "openfoam/velocity_parametrization/run_single_case.sh",
-                "-p " + openfoam_folder,  # case pathway
+                "openfoam/velocity_parametrization/run_pipe_case.sh",
+                "-p " + PIPE_NEW_FOLDER,  # pipe case pathway
                 "-b " + breeder,  # breeder
                 "-v " + str(v_in),  # velocity
             ]
         )
 
         # solutions file
-        openfoam_output = openfoam_folder
+        openfoam_output = PIPE_NEW_FOLDER
 
         c_in = x[:, 0]
         residual_pressure = x[:, 1]

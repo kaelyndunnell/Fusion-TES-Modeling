@@ -31,16 +31,26 @@ def replace_specific_variables(filename, targets):
 parser = argparse.ArgumentParser(description="Determines which case to run in.")
 
 parser.add_argument("--breeder", type=str, help="Breeder material, 'lipb' or 'flibe'.")
-parser.add_argument("--velocity", type=str, help="Velocity of OpenFOAM case being run.")
+parser.add_argument(
+    "--geometry", type=str, help="Geometry of the case, 'inlet_tank' or 'pipe'."
+)
+parser.add_argument(
+    "--velocity", type=str, help="Inlet velocity of OpenFOAM case, in m/s."
+)
 
 args = parser.parse_args()
 
-case_velocity = args.velocity
+geometry = args.geometry
 breeder = args.breeder
+velocity = args.velocity
 
 replace_specific_variables(
-    filename=breeder+"/vel_"
-    + str(case_velocity)
+    filename=breeder
+    + "/"
+    + geometry
+    + "_"
+    + velocity
+    + "m_s"
     + "/constant/polyMesh/boundary",
-    targets={"walls"},
+    targets={"walls", "tank_walls"},
 )
