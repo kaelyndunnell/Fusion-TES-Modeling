@@ -36,7 +36,6 @@ checkMesh > log 2>&1
 cd ..
 cd ..
 python3 change_patch_names.py --breeder $breeder --velocity $v_in --geometry "pipe"
-echo "Wall "patch" changed to "wall""
 
 cd $breeder
 
@@ -44,16 +43,14 @@ parent_dir="$PWD"
 v_in=$(echo "$v_in" | xargs)
 tank_path="$parent_dir/inlet_tank_${v_in}m_s"
 
-echo $tank_path
-
 cd "pipe_${v_in}m_s"
 
 mapFields $tank_path -sourceTime latestTime > log 2>&1
 
-echo done
- 
 foamRun -solver incompressibleFluid > log 2>&1
 
 touch tes.foam
+
+echo "OpenFOAM pipe case completed successfully."
 
 cd ..

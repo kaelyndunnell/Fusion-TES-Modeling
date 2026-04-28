@@ -36,7 +36,6 @@ checkMesh > log 2>&1
 cd ..
 cd ..
 python3 change_patch_names.py --breeder $breeder --velocity $v_in --geometry "inlet_tank"
-echo "Wall "patch" changed to "wall""
 
 cd $breeder
 
@@ -46,5 +45,7 @@ cd "inlet_tank_${v_in}m_s"
 foamRun -solver incompressibleFluid > log 2>&1
 
 touch tes.foam
+
+echo "OpenFOAM tank case completed successfully."
 
 cd ..
