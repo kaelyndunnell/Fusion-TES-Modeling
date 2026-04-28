@@ -22,7 +22,7 @@ boundaryField
 {
     inlet
     {
-        type            nutkWallFunction;
+        type            calculated;
         value           uniform 0; 
     }
     outlet

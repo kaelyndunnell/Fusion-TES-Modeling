@@ -22,7 +22,7 @@ boundaryField
 {
     inlet
     {
-        type            omegaWallFunction;
+        type            fixedValue;
         value           uniform 0.43;
     }
     outlet
