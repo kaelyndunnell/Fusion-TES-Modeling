@@ -1,7 +1,7 @@
 from autoemulate.simulations.base import Simulator
 import torch
 import festim as F
-from main import build_festim_model, findDir
+from main import build_festim_model
 from autoemulate import AutoEmulate
 import os
 import sys
@@ -59,7 +59,7 @@ class FestimProblem(Simulator):
 
         # convert to floats
         v_in = v_in.item()
-        v_in = round(v_in,1)
+        v_in = round(v_in, 1)
 
         # CREATE OPENFOAM MODEL
         Re = calculate_reynolds_number(
@@ -75,14 +75,14 @@ class FestimProblem(Simulator):
         }
 
         # TANK PATHS
-        TANK_NEW_FOLDER = (
-            f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.1f}m_s"
-        )
+        TANK_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.1f}m_s"
         TANK_BENCH_FOLDER = f"{parent_dir}/openfoam/inlet_tank"
         TANK_MESH = f"{parent_dir}/meshing/inlet_tank.msh"
 
         # PIPE_PATHS
-        PIPE_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/pipe_{v_in:.1f}m_s"
+        PIPE_NEW_FOLDER = (
+            f"{parent_dir}/openfoam/velocity_parametrization/lipb/pipe_{v_in:.1f}m_s"
+        )
         PIPE_BENCH_FOLDER = f"{parent_dir}/openfoam/lipb_simple"
         PIPE_MESH = f"{parent_dir}/meshing/tes_openfoam.msh"
 
@@ -160,7 +160,7 @@ class FestimProblem(Simulator):
 
 
 # BREEDER/OPENFOAM PARAMETERS
-inlet_diameter = 0.13 #9e-3  # m from CAD
+inlet_diameter = 0.13  # 9e-3  # m from CAD
 k_b = F.k_B  # eV/K, boltzmann constant
 
 # breeder parameters
