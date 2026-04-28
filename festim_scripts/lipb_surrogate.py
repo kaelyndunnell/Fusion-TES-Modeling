@@ -75,15 +75,15 @@ class FestimProblem(Simulator):
 
         # TANK PATHS
         TANK_NEW_FOLDER = (
-            f"openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.1f}m_s"
+            f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.1f}m_s"
         )
-        TANK_BENCH_FOLDER = "openfoam/inlet_tank"
-        TANK_MESH = "meshing/inlet_tank.msh"
+        TANK_BENCH_FOLDER = f"{parent_dir}/openfoam/inlet_tank"
+        TANK_MESH = f"{parent_dir}/meshing/inlet_tank.msh"
 
         # PIPE_PATHS
-        PIPE_NEW_FOLDER = f"openfoam/velocity_parametrization/lipb/pipe_{v_in:.1f}m_s"
-        PIPE_BENCH_FOLDER = "openfoam/lipb_simple"
-        PIPE_MESH = "meshing/tes_openfoam.msh"
+        PIPE_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/pipe_{v_in:.1f}m_s"
+        PIPE_BENCH_FOLDER = f"{parent_dir}/openfoam/lipb_simple"
+        PIPE_MESH = f"{parent_dir}/meshing/tes_openfoam.msh"
 
         # make tank folders
         create_folders(
@@ -104,7 +104,7 @@ class FestimProblem(Simulator):
         # RUN OPENFOAM TANK MODEL
         subprocess.run(
             [
-                "openfoam/velocity_parametrization/run_tank_case.sh",
+                f"{parent_dir}/openfoam/velocity_parametrization/run_tank_case.sh",
                 "-p " + TANK_NEW_FOLDER,  # case pathway
                 "-b " + breeder,  # breeder
                 "-v " + str(v_in),  # velocity
@@ -114,7 +114,7 @@ class FestimProblem(Simulator):
         # RUN OPENFOAM MODEL
         subprocess.run(
             [
-                "openfoam/velocity_parametrization/run_pipe_case.sh",
+                f"{parent_dir}/openfoam/velocity_parametrization/run_pipe_case.sh",
                 "-p " + PIPE_NEW_FOLDER,  # pipe case pathway
                 "-b " + breeder,  # breeder
                 "-v " + str(v_in),  # velocity
@@ -137,7 +137,7 @@ class FestimProblem(Simulator):
             residual_pressure=residual_pressure,
             breeder="lipb",
             openfoam_data_folder=openfoam_output,
-            festim_mesh_file="meshing/test_festim.msh",
+            festim_mesh_file=f"{parent_dir}/meshing/test_festim.msh",
             results_folder=f"lipb_festim_results/inlet_{c_in}_pressure_{residual_pressure}",
         )
 
