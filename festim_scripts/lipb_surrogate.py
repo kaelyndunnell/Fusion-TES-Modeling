@@ -160,7 +160,7 @@ class FestimProblem(Simulator):
 
 
 # BREEDER/OPENFOAM PARAMETERS
-inlet_diameter = 9e-3  # m from CAD
+inlet_diameter = 0.13 #9e-3  # m from CAD
 k_b = F.k_B  # eV/K, boltzmann constant
 
 # breeder parameters
