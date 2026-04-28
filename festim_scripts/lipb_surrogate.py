@@ -59,6 +59,7 @@ class FestimProblem(Simulator):
 
         # convert to floats
         v_in = v_in.item()
+        v_in = round(v_in,1)
 
         # CREATE OPENFOAM MODEL
         Re = calculate_reynolds_number(
