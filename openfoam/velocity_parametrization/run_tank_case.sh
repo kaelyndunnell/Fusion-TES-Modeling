@@ -30,8 +30,8 @@ fi
 # begin script when all parameters given 
 cd $case_pathway
 
-gmshToFoam inlet_tank.msh
-checkMesh
+gmshToFoam inlet_tank.msh > log 2>&1
+checkMesh > log 2>&1
 
 cd ..
 cd ..
@@ -43,7 +43,7 @@ cd $breeder
 v_in=$(echo "$v_in" | xargs)
 cd "inlet_tank_${v_in}m_s"
 
-foamRun -solver incompressibleFluid
+foamRun -solver incompressibleFluid > log 2>&1
 
 touch tes.foam
 

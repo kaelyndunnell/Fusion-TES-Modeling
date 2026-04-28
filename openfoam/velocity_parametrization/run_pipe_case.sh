@@ -30,8 +30,8 @@ fi
 # begin script when all parameters given 
 cd $case_pathway
 
-gmshToFoam tes_openfoam.msh
-checkMesh
+gmshToFoam tes_openfoam.msh > log 2>&1
+checkMesh > log 2>&1
 
 cd ..
 cd ..
@@ -48,11 +48,11 @@ echo $tank_path
 
 cd "pipe_${v_in}m_s"
 
-mapFields $tank_path -sourceTime latestTime
+mapFields $tank_path -sourceTime latestTime > log 2>&1
 
 echo done
  
-foamRun -solver incompressibleFluid
+foamRun -solver incompressibleFluid > log 2>&1
 
 touch tes.foam
 
