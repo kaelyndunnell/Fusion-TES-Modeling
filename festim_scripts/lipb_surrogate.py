@@ -62,6 +62,20 @@ class FestimProblem(Simulator):
         v_in = round(v_in, 1)
 
         # CREATE OPENFOAM MODEL
+        tank_inlet_diameter = 0.0275 * 2
+
+        Re = calculate_reynolds_number(
+            v_in, tank_inlet_diameter, kinematic_viscosity, breeder, suppress_print=True
+        )
+        k = calculate_initial_k(v_in)
+        omega = calculate_initial_omega(k, tank_inlet_diameter)
+
+        tank_variables_dict = {
+            "U": [0.5, v_in],
+            "k": [0.000937, k],
+            "omega": [0.43, omega],
+        }
+
         Re = calculate_reynolds_number(
             v_in, inlet_diameter, kinematic_viscosity, breeder, suppress_print=True
         )
@@ -91,7 +105,7 @@ class FestimProblem(Simulator):
             new_folder_path=TANK_NEW_FOLDER,
             bench_folder_path=TANK_BENCH_FOLDER,
             openfoam_mesh=TANK_MESH,
-            turbulent_variables_dict=variables_dict,
+            turbulent_variables_dict=tank_variables_dict,
         )
 
         # make pipe folders
@@ -138,7 +152,7 @@ class FestimProblem(Simulator):
             residual_pressure=residual_pressure,
             breeder="lipb",
             openfoam_data_folder=openfoam_output,
-            festim_mesh_file=f"{parent_dir}/meshing/test_festim.msh",
+            festim_mesh_file=f"{parent_dir}/meshing/tes_festim.msh",
             results_folder=f"lipb_festim_results/inlet_{c_in}_pressure_{residual_pressure}",
         )
 
@@ -160,7 +174,7 @@ class FestimProblem(Simulator):
 
 
 # BREEDER/OPENFOAM PARAMETERS
-inlet_diameter = 0.13  # 9e-3  # m from CAD
+inlet_diameter = 9e-3  # m from CAD
 k_b = F.k_B  # eV/K, boltzmann constant
 
 # breeder parameters
