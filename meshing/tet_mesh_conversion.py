@@ -6,21 +6,16 @@ from dolfinx.io import gmsh as gmshio
 from mpi4py import MPI
 
 
-### SCRIPT TO CONVERT VOLUME SINGLE ELEMENT TET MESHES PRODUCED WITH CUBIT TO .gmsh MESHES FOR OPENFOAM OR FESTIM ###
+### SCRIPT TO CONVERT VOLUME SINGLE ELEMENT TET MESHES PRODUCED WITH CUBIT TO .gmsh MESHES FOR OPENFOAM ###
 
 
-def convert_mesh(openfoam: bool):
+def convert_mesh():
     """converts an exodus mesh produced from CUBIT to a gmsh .msh file for use
-    in openfoam or FESTIM."""
+    in openfoam."""
 
-    if openfoam:
-        # openfoam one vol path
-        mesh_file_path = "meshing/CAD/cubit_files/inlet_tank.e"
-        write_path = "meshing/inlet_tank.msh"
-    else:
-        # festim two vols paths
-        mesh_file_path = "meshing/CAD/cubit_files/test_two_vols.e"
-        write_path = "meshing/test_festim.msh"
+    # tank one vol path
+    mesh_file_path = "meshing/CAD/cubit_files/inlet_tank.e"
+    write_path = "meshing/inlet_tank.msh"
 
     mesh = meshio.read(mesh_file_path)
     print("cell types:", [b.type for b in mesh.cells])
@@ -33,23 +28,12 @@ def convert_mesh(openfoam: bool):
     tri_keys = {"triangle", "TRIANGLE3"}
 
     # assigning names to each block idk from cubit
-    if openfoam:
-        physical_groups = {  # ids start from 0 here but 1 in cubit
-            0: (1, "fluid", 3),
-            1: (2, "tank_inlet", 2),
-            2: (3, "tank_outlet", 2),
-            3: (4, "tank_walls", 2),
-        }
-    else:
-        physical_groups = {  # ids start from 0 here but 1 in cubit
-            0: (1, "fluid", 3),
-            1: (2, "membrane", 3),
-            2: (3, "inlet", 2),
-            3: (4, "outlet", 2),
-            4: (5, "walls", 2),
-            5: (6, "vacuum", 2),
-            6: (7, "interface", 2),
-        }
+    physical_groups = {  # ids start from 0 here but 1 in cubit
+        0: (1, "fluid", 3),
+        1: (2, "tank_inlet", 2),
+        2: (3, "tank_outlet", 2),
+        3: (4, "tank_walls", 2),
+    }
 
     # SURFACES
     all_cells = []  # output cell data
@@ -121,21 +105,4 @@ def convert_mesh(openfoam: bool):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(
-        description="Determines which program to convert mesh for (OpenFOAM or FESTIM)."
-    )
-    parser.add_argument(
-        "-program",
-        type=str,
-        help="Program to convert mesh for, openfoam for OpenFOAM or festim for FESTIM.",
-    )
-
-    args = parser.parse_args()
-    program = args.program
-
-    if program == "openfoam":
-        openfoam = True
-    else:
-        openfoam = False
-
-    convert_mesh(openfoam=openfoam)
+    convert_mesh()
