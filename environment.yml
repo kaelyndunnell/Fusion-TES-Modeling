@@ -13,7 +13,7 @@ dependencies:
   - ipykernel
   - nbconvert
   - fenics-dolfinx
-  - festim=2.0b1
+  - festim=2.0b2.post2
   - python-gmsh
   - shapely
   - scipy
