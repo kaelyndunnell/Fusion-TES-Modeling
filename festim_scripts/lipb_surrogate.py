@@ -139,8 +139,8 @@ class FestimProblem(Simulator):
         # solutions file
         openfoam_output = PIPE_NEW_FOLDER
 
-        c_in = x[:, 0]
-        residual_pressure = x[:, 1]
+        c_in = x[:, 1]
+        residual_pressure = x[:, 2]
 
         # convert to float
         c_in = c_in.item()
