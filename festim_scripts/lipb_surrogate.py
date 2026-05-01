@@ -162,7 +162,7 @@ class FestimProblem(Simulator):
 
         # extract c at outlet and permeation flux
         c_out = model.exports[0].data
-        permeation_flux = model.exports[-1].data
+        permeation_flux = model.exports[1].data
 
         y = torch.tensor([c_out, permeation_flux]).T
 
