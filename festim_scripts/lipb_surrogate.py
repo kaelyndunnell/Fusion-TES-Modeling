@@ -89,13 +89,13 @@ class FestimProblem(Simulator):
         }
 
         # TANK PATHS
-        TANK_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.1f}m_s"
+        TANK_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.2f}m_s"
         TANK_BENCH_FOLDER = f"{parent_dir}/openfoam/inlet_tank"
         TANK_MESH = f"{parent_dir}/meshing/inlet_tank.msh"
 
         # PIPE_PATHS
         PIPE_NEW_FOLDER = (
-            f"{parent_dir}/openfoam/velocity_parametrization/lipb/pipe_{v_in:.1f}m_s"
+            f"{parent_dir}/openfoam/velocity_parametrization/lipb/pipe_{v_in:.2f}m_s"
         )
         PIPE_BENCH_FOLDER = f"{parent_dir}/openfoam/lipb_simple"
         PIPE_MESH = f"{parent_dir}/meshing/tes_openfoam.msh"
@@ -125,7 +125,7 @@ class FestimProblem(Simulator):
                     f"{parent_dir}/openfoam/velocity_parametrization/run_tank_case.sh",
                     "-p " + TANK_NEW_FOLDER,  # case pathway
                     "-b " + breeder,  # breeder
-                    "-v " + str(v_in),  # velocity
+                    "-v " + f"{v_in:.2f}",  # velocity
                 ]
             )
 
@@ -135,7 +135,7 @@ class FestimProblem(Simulator):
                     f"{parent_dir}/openfoam/velocity_parametrization/run_pipe_case.sh",
                     "-p " + PIPE_NEW_FOLDER,  # pipe case pathway
                     "-b " + breeder,  # breeder
-                    "-v " + str(v_in),  # velocity
+                    "-v " + f"{v_in:.2f}",  # velocity
                 ]
             )
 
@@ -204,7 +204,7 @@ kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
 # set up model
 simulator = FestimProblem(
     parameters_range={
-        "v_in": (0.1, 2),
+        "v_in": (0.01, 2.1),
         "c_in": (1e15, 1e25),
         # "residual_pressure": (0.0, 0.0),
     },  # ranges for each variable
