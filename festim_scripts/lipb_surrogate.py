@@ -100,60 +100,63 @@ class FestimProblem(Simulator):
         PIPE_BENCH_FOLDER = f"{parent_dir}/openfoam/lipb_simple"
         PIPE_MESH = f"{parent_dir}/meshing/tes_openfoam.msh"
 
-        # make tank folders
-        create_folders(
-            new_folder_path=TANK_NEW_FOLDER,
-            bench_folder_path=TANK_BENCH_FOLDER,
-            openfoam_mesh=TANK_MESH,
-            turbulent_variables_dict=tank_variables_dict,
-        )
+        if os.path.isdir(TANK_NEW_FOLDER):
+            print("Skipping to FESTIM simulation.")
+        else:
+            # make tank folders
+            create_folders(
+                new_folder_path=TANK_NEW_FOLDER,
+                bench_folder_path=TANK_BENCH_FOLDER,
+                openfoam_mesh=TANK_MESH,
+                turbulent_variables_dict=tank_variables_dict,
+            )
 
-        # make pipe folders
-        create_folders(
-            new_folder_path=PIPE_NEW_FOLDER,
-            bench_folder_path=PIPE_BENCH_FOLDER,
-            openfoam_mesh=PIPE_MESH,
-            turbulent_variables_dict=variables_dict,
-        )
+            # make pipe folders
+            create_folders(
+                new_folder_path=PIPE_NEW_FOLDER,
+                bench_folder_path=PIPE_BENCH_FOLDER,
+                openfoam_mesh=PIPE_MESH,
+                turbulent_variables_dict=variables_dict,
+            )
 
-        # RUN OPENFOAM TANK MODEL
-        subprocess.run(
-            [
-                f"{parent_dir}/openfoam/velocity_parametrization/run_tank_case.sh",
-                "-p " + TANK_NEW_FOLDER,  # case pathway
-                "-b " + breeder,  # breeder
-                "-v " + str(v_in),  # velocity
-            ]
-        )
+            # RUN OPENFOAM TANK MODEL
+            subprocess.run(
+                [
+                    f"{parent_dir}/openfoam/velocity_parametrization/run_tank_case.sh",
+                    "-p " + TANK_NEW_FOLDER,  # case pathway
+                    "-b " + breeder,  # breeder
+                    "-v " + str(v_in),  # velocity
+                ]
+            )
 
-        # RUN OPENFOAM MODEL
-        subprocess.run(
-            [
-                f"{parent_dir}/openfoam/velocity_parametrization/run_pipe_case.sh",
-                "-p " + PIPE_NEW_FOLDER,  # pipe case pathway
-                "-b " + breeder,  # breeder
-                "-v " + str(v_in),  # velocity
-            ]
-        )
+            # RUN OPENFOAM MODEL
+            subprocess.run(
+                [
+                    f"{parent_dir}/openfoam/velocity_parametrization/run_pipe_case.sh",
+                    "-p " + PIPE_NEW_FOLDER,  # pipe case pathway
+                    "-b " + breeder,  # breeder
+                    "-v " + str(v_in),  # velocity
+                ]
+            )
 
         # solutions file
         openfoam_output = PIPE_NEW_FOLDER
 
         c_in = x[:, 1]
-        residual_pressure = x[:, 2]
+        # residual_pressure = x[:, 2]
 
         # convert to float
         c_in = c_in.item()
-        residual_pressure = residual_pressure.item()
+        # residual_pressure = residual_pressure.item()
 
         # FESTIM MODEL
         model = build_festim_model(
             c_inlet=c_in,
-            residual_pressure=residual_pressure,
+            residual_pressure=0.0,
             breeder="lipb",
             openfoam_data_folder=openfoam_output,
             festim_mesh_file=f"{parent_dir}/meshing/tes_festim.msh",
-            results_folder=f"lipb_festim_results/inlet_{c_in}_pressure_{residual_pressure}",
+            results_folder=f"lipb_festim_results/inlet_{c_in}_pressure_{0.0}",
         )
 
         # solve the model
@@ -203,7 +206,7 @@ simulator = FestimProblem(
     parameters_range={
         "v_in": (0.1, 2),
         "c_in": (1e15, 1e25),
-        "residual_pressure": (0.0, 0.0),
+        # "residual_pressure": (0.0, 0.0),
     },  # ranges for each variable
     output_names=["c_out", "permeation_flux"],
 )
@@ -219,6 +222,14 @@ ae = AutoEmulate(X, Y, log_level="info")
 emulator = [r for r in ae.results if r.model_name == "GaussianProcessRBF"][0]
 
 print(f"Selected model: {emulator.model_name} with id: {emulator.id}")
+
+# save the model
+path = "lipb_emulators"
+if not os.path.exists(path):
+    os.makedirs(path)
+
+emulator_filepath = ae.save(emulator, path, use_timestamp=True)
+print("Model and metadata saved to: ", emulator_filepath)
 
 # plotting
 fig = ae.plot(emulator)
