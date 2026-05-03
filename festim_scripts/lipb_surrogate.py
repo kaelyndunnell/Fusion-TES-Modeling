@@ -240,7 +240,7 @@ if __name__ == "__main__":
 
     # plot predictions
     fig_preds = ae.plot_preds(emulator, output_names=simulator.output_names)
-    fig_preds.savefig(path+/"lipb_plot_preds.png")
+    fig_preds.savefig(path+"/lipb_plot_preds.png")
     plt.close(fig_preds)
 
     # plot mean and variance
