@@ -10,6 +10,7 @@ import numpy as np
 import shutil
 import subprocess
 import matplotlib.pyplot as plt
+from autoemulate.core.plotting import create_and_plot_slice
 
 # add openfoam/ to path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -176,7 +177,7 @@ class FestimProblem(Simulator):
         return y
 
 if __name__ == "__main__":
-    
+
     # BREEDER/OPENFOAM PARAMETERS
     inlet_diameter = 9e-3  # m from CAD
     k_b = F.k_B  # eV/K, boltzmann constant
@@ -225,7 +226,7 @@ if __name__ == "__main__":
     print(f"Selected model: {emulator.model_name} with id: {emulator.id}")
 
     # save the model
-    path = "lipb_emulators"
+    path = "lipb_emulators/emulator_1"
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -234,5 +235,26 @@ if __name__ == "__main__":
 
     # plotting
     fig = ae.plot(emulator)
-    fig.savefig("lipb_plot.png")
+    fig.savefig(path+"/lipb_plot.png")
     plt.close(fig)
+
+    # plot predictions
+    fig_preds = ae.plot_preds(emulator, output_names=simulator.output_names)
+    fig_preds.savefig(path+/"lipb_plot_preds.png")
+    plt.close(fig_preds)
+
+    # plot mean and variance
+    for i in range(2):
+
+        fig_mean, axs = create_and_plot_slice(
+            emulator.model,
+            output_idx=i,
+            parameters_range=simulator.parameters_range,
+            quantile=0.5,
+            param_pair=(0, 1),
+        )
+        plt.scatter(X[:, 0], X[:, 1])
+        plt.suptitle(f"{simulator.output_names[i]}")
+        fig_mean.savefig(path+"/lipb_mean_variance_plot.png")
+        plt.close(fig_mean)
+
