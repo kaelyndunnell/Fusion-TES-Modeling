@@ -156,7 +156,7 @@ class FestimProblem(Simulator):
             breeder="lipb",
             openfoam_data_folder=openfoam_output,
             festim_mesh_file=f"{parent_dir}/meshing/tes_festim.msh",
-            results_folder=f"lipb_festim_results/inlet_{c_in}_pressure_{0.0}",
+            results_folder=f"lipb_festim_results/inlet_{c_in}_velocity_{v_in}",
         )
 
         # solve the model
@@ -175,63 +175,64 @@ class FestimProblem(Simulator):
 
         return y
 
+if __name__ == "__main__":
+    
+    # BREEDER/OPENFOAM PARAMETERS
+    inlet_diameter = 9e-3  # m from CAD
+    k_b = F.k_B  # eV/K, boltzmann constant
 
-# BREEDER/OPENFOAM PARAMETERS
-inlet_diameter = 9e-3  # m from CAD
-k_b = F.k_B  # eV/K, boltzmann constant
+    # breeder parameters
+    breeder = "lipb"
+    breeder_temperature = 603.15  # K from Utili 2023
+    LiPb_density = (
+        10520.35 - 1.19051 * breeder_temperature
+    )  # kg/m3 ; equation from Martelli 2019
 
-# breeder parameters
-breeder = "lipb"
-breeder_temperature = 603.15  # K from Utili 2023
-LiPb_density = (
-    10520.35 - 1.19051 * breeder_temperature
-)  # kg/m3 ; equation from Martelli 2019
+    lipb_diffusivity = (
+        htm.diffusivities.filter(material=htm.LIPB)
+        .filter(exclude=True, isotope="H")
+        .filter(exclude=True, isotope="D")
+        .mean()
+    )
+    E_D = lipb_diffusivity.act_energy.magnitude  # eV
+    D_0 = lipb_diffusivity.pre_exp.magnitude  # m2/s
+    LiPb_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
 
-lipb_diffusivity = (
-    htm.diffusivities.filter(material=htm.LIPB)
-    .filter(exclude=True, isotope="H")
-    .filter(exclude=True, isotope="D")
-    .mean()
-)
-E_D = lipb_diffusivity.act_energy.magnitude  # eV
-D_0 = lipb_diffusivity.pre_exp.magnitude  # m2/s
-LiPb_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
+    kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
+        breeder_temperature, LiPb_density, breeder, suppress_print=True
+    )
 
-kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
-    breeder_temperature, LiPb_density, breeder, suppress_print=True
-)
+    # set up model
+    simulator = FestimProblem(
+        parameters_range={
+            "v_in": (0.01, 2.1),
+            "c_in": (1e15, 1e25),
+            # "residual_pressure": (0.0, 0.0),
+        },  # ranges for each variable
+        output_names=["c_out", "permeation_flux"],
+    )
 
-# set up model
-simulator = FestimProblem(
-    parameters_range={
-        "v_in": (0.01, 2.1),
-        "c_in": (1e15, 1e25),
-        # "residual_pressure": (0.0, 0.0),
-    },  # ranges for each variable
-    output_names=["c_out", "permeation_flux"],
-)
+    # training data
+    n_samples = 20
 
-# training data
-n_samples = 20
+    X = simulator.sample_inputs(n_samples)
+    Y, _ = simulator.forward_batch(X, allow_failures=False)
 
-X = simulator.sample_inputs(n_samples)
-Y, _ = simulator.forward_batch(X, allow_failures=False)
+    # train the model
+    ae = AutoEmulate(X, Y, log_level="info")
+    emulator = [r for r in ae.results if r.model_name == "GaussianProcessRBF"][0]
 
-# train the model
-ae = AutoEmulate(X, Y, log_level="info")
-emulator = [r for r in ae.results if r.model_name == "GaussianProcessRBF"][0]
+    print(f"Selected model: {emulator.model_name} with id: {emulator.id}")
 
-print(f"Selected model: {emulator.model_name} with id: {emulator.id}")
+    # save the model
+    path = "lipb_emulators"
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-# save the model
-path = "lipb_emulators"
-if not os.path.exists(path):
-    os.makedirs(path)
+    emulator_filepath = ae.save(emulator, path, use_timestamp=True)
+    print("Model and metadata saved to: ", emulator_filepath)
 
-emulator_filepath = ae.save(emulator, path, use_timestamp=True)
-print("Model and metadata saved to: ", emulator_filepath)
-
-# plotting
-fig = ae.plot(emulator)
-fig.savefig("lipb_plot.png")
-plt.close(fig)
+    # plotting
+    fig = ae.plot(emulator)
+    fig.savefig("lipb_plot.png")
+    plt.close(fig)
