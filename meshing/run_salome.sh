@@ -44,9 +44,8 @@ export UNV_DIR="$(echo "$mesh_folder" | xargs)"
 export BEND_R="$(echo "$bend_r" | xargs)"
 export LENGTH="$(echo "$length" | xargs)"
 
-cd /opt/salome && /opt/salome/salome -t python "$SCRIPT_DIR/salome_unv_generation.py"
+export PYTHONWARNINGS="ignore::SyntaxWarning" # suppress salome warnings
 
-# source /opt/salome/BINARIES-UB24.04/KERNEL/bin/salome.sh
-# python meshing/salome_unv_generation.py --bend_r $bend_r --length $length --unv_dir $mesh_folder
+cd /opt/salome && /opt/salome/salome -t python "$SCRIPT_DIR/salome_unv_generation.py"
 
 conda activate tes-pav-env
