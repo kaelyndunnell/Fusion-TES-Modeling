@@ -62,20 +62,20 @@ class FestimProblem(Simulator):
         v_in = v_in.item()
         v_in = round(v_in, 1)
 
-        # CREATE OPENFOAM MODEL
-        tank_inlet_diameter = 0.0275 * 2
+        # # CREATE OPENFOAM MODEL
+        # tank_inlet_diameter = 0.0275 * 2
 
-        Re = calculate_reynolds_number(
-            v_in, tank_inlet_diameter, kinematic_viscosity, breeder, suppress_print=True
-        )
-        k = calculate_initial_k(v_in)
-        omega = calculate_initial_omega(k, tank_inlet_diameter)
+        # Re = calculate_reynolds_number(
+        #     v_in, tank_inlet_diameter, kinematic_viscosity, breeder, suppress_print=True
+        # )
+        # k = calculate_initial_k(v_in)
+        # omega = calculate_initial_omega(k, tank_inlet_diameter)
 
-        tank_variables_dict = {
-            "U": [0.5, v_in],
-            "k": [0.000937, k],
-            "omega": [0.43, omega],
-        }
+        # tank_variables_dict = {
+        #     "U": [0.5, v_in],
+        #     "k": [0.000937, k],
+        #     "omega": [0.43, omega],
+        # }
 
         Re = calculate_reynolds_number(
             v_in, inlet_diameter, kinematic_viscosity, breeder, suppress_print=True
@@ -89,10 +89,10 @@ class FestimProblem(Simulator):
             "omega": [0.43, omega],
         }
 
-        # TANK PATHS
-        TANK_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.2f}m_s"
-        TANK_BENCH_FOLDER = f"{parent_dir}/openfoam/inlet_tank"
-        TANK_MESH = f"{parent_dir}/meshing/inlet_tank.msh"
+        # # TANK PATHS
+        # TANK_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.2f}m_s"
+        # TANK_BENCH_FOLDER = f"{parent_dir}/openfoam/inlet_tank"
+        # TANK_MESH = f"{parent_dir}/meshing/inlet_tank.msh"
 
         # PIPE_PATHS
         PIPE_NEW_FOLDER = (
@@ -101,16 +101,16 @@ class FestimProblem(Simulator):
         PIPE_BENCH_FOLDER = f"{parent_dir}/openfoam/lipb_simple"
         PIPE_MESH = f"{parent_dir}/meshing/tes_openfoam.msh"
 
-        if os.path.isdir(TANK_NEW_FOLDER):
+        if os.path.isdir(PIPE_NEW_FOLDER):
             print("Skipping to FESTIM simulation.")
         else:
-            # make tank folders
-            create_folders(
-                new_folder_path=TANK_NEW_FOLDER,
-                bench_folder_path=TANK_BENCH_FOLDER,
-                openfoam_mesh=TANK_MESH,
-                turbulent_variables_dict=tank_variables_dict,
-            )
+            # # make tank folders
+            # create_folders(
+            #     new_folder_path=TANK_NEW_FOLDER,
+            #     bench_folder_path=TANK_BENCH_FOLDER,
+            #     openfoam_mesh=TANK_MESH,
+            #     turbulent_variables_dict=tank_variables_dict,
+            # )
 
             # make pipe folders
             create_folders(
@@ -120,15 +120,15 @@ class FestimProblem(Simulator):
                 turbulent_variables_dict=variables_dict,
             )
 
-            # RUN OPENFOAM TANK MODEL
-            subprocess.run(
-                [
-                    f"{parent_dir}/openfoam/velocity_parametrization/run_tank_case.sh",
-                    "-p " + TANK_NEW_FOLDER,  # case pathway
-                    "-b " + breeder,  # breeder
-                    "-v " + f"{v_in:.2f}",  # velocity
-                ]
-            )
+            # # RUN OPENFOAM TANK MODEL
+            # subprocess.run(
+            #     [
+            #         f"{parent_dir}/openfoam/velocity_parametrization/run_tank_case.sh",
+            #         "-p " + TANK_NEW_FOLDER,  # case pathway
+            #         "-b " + breeder,  # breeder
+            #         "-v " + f"{v_in:.2f}",  # velocity
+            #     ]
+            # )
 
             # RUN OPENFOAM MODEL
             subprocess.run(
@@ -147,8 +147,9 @@ class FestimProblem(Simulator):
         # residual_pressure = x[:, 2]
 
         # convert to float
-        c_in = c_in.item()
-        # residual_pressure = residual_pressure.item()
+        c_in = 10**(c_in.item())
+        # c_in = 10**c_in
+        print(c_in)
 
         # FESTIM MODEL
         model = build_festim_model(
@@ -207,8 +208,7 @@ if __name__ == "__main__":
     simulator = FestimProblem(
         parameters_range={
             "v_in": (0.01, 2.1),
-            "c_in": (1e15, 1e25),
-            # "residual_pressure": (0.0, 0.0),
+            "c_in": (np.log10(1e15), np.log10(1e25)),
         },  # ranges for each variable
         output_names=["c_out", "permeation_flux"],
     )
@@ -217,44 +217,8 @@ if __name__ == "__main__":
     n_samples = 20
 
     X = simulator.sample_inputs(n_samples)
-    Y, _ = simulator.forward_batch(X, allow_failures=False)
+    Y, _ = simulator.forward_batch(X, allow_failures=True)
+    Y = np.log10(Y)
 
-    # train the model
-    ae = AutoEmulate(X, Y, log_level="info")
-    emulator = [r for r in ae.results if r.model_name == "GaussianProcessRBF"][0]
-
-    print(f"Selected model: {emulator.model_name} with id: {emulator.id}")
-
-    # save the model
-    path = "lipb_emulators/emulator_1"
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    emulator_filepath = ae.save(emulator, path, use_timestamp=True)
-    print("Model and metadata saved to: ", emulator_filepath)
-
-    # plotting
-    fig = ae.plot(emulator)
-    fig.savefig(path+"/lipb_plot.png")
-    plt.close(fig)
-
-    # plot predictions
-    fig_preds = ae.plot_preds(emulator, output_names=simulator.output_names)
-    fig_preds.savefig(path+"/lipb_plot_preds.png")
-    plt.close(fig_preds)
-
-    # plot mean and variance
-    for i in range(2):
-
-        fig_mean, axs = create_and_plot_slice(
-            emulator.model,
-            output_idx=i,
-            parameters_range=simulator.parameters_range,
-            quantile=0.5,
-            param_pair=(0, 1),
-        )
-        plt.scatter(X[:, 0], X[:, 1])
-        plt.suptitle(f"{simulator.output_names[i]}")
-        fig_mean.savefig(path+"/lipb_mean_variance_plot.png")
-        plt.close(fig_mean)
-
+    np.savetxt("lipb_emulators/emulator_1/inputs.csv", X, delimiter=",")
+    np.savetxt("lipb_emulators/emulator_1/outputs.csv", Y, delimiter=",")

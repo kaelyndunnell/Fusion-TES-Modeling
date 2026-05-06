@@ -3,14 +3,14 @@
 helpFunction() 
 {
    echo ""
-   echo "Usage: $0 -p case_pathway -b -v v_in -t time"
+   echo "Usage: $0 -p case_pathway -v v_in -b breeder -m mesh_file"
    echo -e "\t-p Path to pipe OpenFOAM case directory."
    echo -e "\t-b Breeder of simulation, lipb or flibe."
    echo -e "\t-v Breeder inlet velocity."
    exit 1 # exit script after printing help 
 }
 
-while getopts "p:d:b:v:t:" opt
+while getopts "p:b:v:m:" opt
 do
    case "$opt" in
       p ) case_pathway="$OPTARG" ;;
@@ -21,7 +21,7 @@ do
 done
 
 # print helpFunction in case parameters are empty
-if [ -z "$case_pathway" ] || [ -z "$breeder" ] || [ -z "$v_in" ]
+if [ -z "$case_pathway" ] || [ -z "$breeder" ] || [ -z "$v_in" ] 
 then
    echo "Some or all of the parameters are empty";
    helpFunction
@@ -41,11 +41,11 @@ cd $breeder
 
 parent_dir="$PWD"
 v_in=$(echo "$v_in" | xargs)
-tank_path="$parent_dir/inlet_tank_${v_in}m_s"
+# tank_path="$parent_dir/inlet_tank_${v_in}m_s"
 
 cd "pipe_${v_in}m_s"
 
-mapFields $tank_path -sourceTime latestTime > log 2>&1
+# mapFields $tank_path -sourceTime latestTime > log 2>&1
 
 foamRun -solver incompressibleFluid > log 2>&1
 
