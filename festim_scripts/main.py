@@ -131,88 +131,45 @@ def build_festim_model(
 
     # BREEDER MATERIAL
 
-    if breeder == "flibe":
-        breeder_diffusivity = (
-            htm.diffusivities.filter(material=htm.FLIBE)
-            .filter(exclude=True, isotope="H")
-            .filter(exclude=True, isotope="D")
-            .mean()
-        )
-        breeder_solubility = (
-            htm.solubilities.filter(material=htm.FLIBE)
-            .filter(exclude=True, isotope="H")
-            .filter(exclude=True, isotope="D")
-            .mean()
-        )
-        breeder_solubility_law = "HENRY"  # default is sievert's
-        breeder_temperature = 900  # K
+    breeder_diffusivity = (
+        htm.diffusivities.filter(material=htm.LIPB)
+        .filter(exclude=True, isotope="H")
+        .filter(exclude=True, isotope="D")
+        .mean()
+    )
+    breeder_solubility = (
+        htm.solubilities.filter(material=htm.LIPB)
+        .filter(exclude=True, isotope="H")
+        .filter(exclude=True, isotope="D")
+        .mean()
+    )
+    breeder_solubility_law = "SIEVERT"
+    breeder_temperature = 603.15  # K
 
-        # membrane material (SS316L for FLiBe)
+    # membrane material (Nb for LiPb)
 
-        membrane_diffusivity = (
-            htm.diffusivities.filter(material=htm.STEEL_316L)
-            .filter(exclude=True, isotope="H")
-            .filter(exclude=True, isotope="D")
-            .mean()
-        )
+    membrane_diffusivity = (
+        htm.diffusivities.filter(material=htm.NIOBIUM)
+        .filter(exclude=True, isotope="H")
+        .filter(exclude=True, isotope="D")[0]
+    )
 
-        membrane_solubility = (
-            htm.solubilities.filter(material=htm.STEEL_316L)
-            .filter(exclude=True, isotope="H")
-            .filter(exclude=True, isotope="D")
-            .mean()
-        )
-        membrane_solubility_law = "SIEVERT"
+    membrane_solubility = htm.solubilities.filter(material=htm.NIOBIUM)[0]
+    membrane_solubility_law = "SIEVERT"
 
-        membrane_recombo = htm.recombination_coeffs.filter(
-            material=htm.STEEL_316L
-        ).mean()
+    u = htm.ureg
+    membrane_recombo = htm.RecombinationCoeff(
+        pre_exp=1.88e-18,  # m4/s
+        act_energy=74 * u.kJ * u.mol**-1,
+        source="10.1238/Physica.Topical.103a00113",
+    )
 
-        membrane_diss = htm.dissociation_coeffs.filter(material=htm.STEEL_316L).mean()
-        penalty_term = 1e21
+    membrane_diss = htm.dissociation_coeffs.filter(material=htm.Metal).mean()
 
-        delta = 100
+    my_model.method_interface = F.InterfaceMethod.penalty
+    penalty_term = 1e25
 
-    elif breeder == "lipb":
-        breeder_diffusivity = (
-            htm.diffusivities.filter(material=htm.LIPB)
-            .filter(exclude=True, isotope="H")
-            .filter(exclude=True, isotope="D")
-            .mean()
-        )
-        breeder_solubility = (
-            htm.solubilities.filter(material=htm.LIPB)
-            .filter(exclude=True, isotope="H")
-            .filter(exclude=True, isotope="D")
-            .mean()
-        )
-        breeder_solubility_law = "SIEVERT"
-        breeder_temperature = 603.15  # K
-
-        # membrane material (Nb for LiPb)
-
-        membrane_diffusivity = (
-            htm.diffusivities.filter(material=htm.NIOBIUM)
-            .filter(exclude=True, isotope="H")
-            .filter(exclude=True, isotope="D")[0]
-        )
-
-        membrane_solubility = htm.solubilities.filter(material=htm.NIOBIUM)[0]
-        membrane_solubility_law = "SIEVERT"
-
-        u = htm.ureg
-        membrane_recombo = htm.RecombinationCoeff(
-            pre_exp=1.88e-18,  # m4/s
-            act_energy=74 * u.kJ * u.mol**-1,
-            source="10.1238/Physica.Topical.103a00113",
-        )
-
-        membrane_diss = htm.dissociation_coeffs.filter(material=htm.Metal).mean()
-
-        my_model.method_interface = F.InterfaceMethod.penalty
-        penalty_term = 1e25
-
-        delta = 1
+    delta = 1
 
     D_0_breeder = breeder_diffusivity.pre_exp.magnitude  # m2/s,
     E_D_breeder = breeder_diffusivity.act_energy.magnitude  # eV
@@ -258,8 +215,6 @@ def build_festim_model(
 
     breeder_material = F.Material(
         D=D_tot,
-        # D_0=D_0_breeder,
-        # E_D=E_D_breeder,
         K_S_0=breeder_solubility.pre_exp.magnitude,
         E_K_S=breeder_solubility.act_energy.magnitude,
         solubility_law=breeder_solubility_law,
@@ -341,7 +296,6 @@ def build_festim_model(
 
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(subdomain=inlet, value=c_inlet, species=T),
-        # F.FixedConcentrationBC(subdomain=vacuum, value=0, species=T),
         vacuum_TT_rxn,
     ]
 
@@ -384,10 +338,10 @@ if __name__ == "__main__":
     my_model = build_festim_model(
         c_inlet=1e20,
         residual_pressure=0,
-        breeder="flibe",
+        breeder="lipb",
         openfoam_data_folder="openfoam/flibe_simple",
-        festim_mesh_file="meshing/test_festim.msh",
-        results_folder="flibe_festim_results/benchmark",
+        festim_mesh_file="meshing/tes_festim.msh",
+        results_folder="lipb_festim_results/benchmark",
     )
 
     # INITIALISE AND RUN
