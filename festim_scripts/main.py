@@ -170,7 +170,7 @@ def build_festim_model(
     penalty_term = 1e25
 
     delta = 1
-    if c_inlet < 1e18:
+    if c_inlet < 1e21:
         delta = 10
 
     D_0_breeder = breeder_diffusivity.pre_exp.magnitude  # m2/s,
