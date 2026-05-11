@@ -46,7 +46,7 @@ fig_mean, axs = create_and_plot_slice(
 )
 plt.scatter(X[:, 0], X[:, 1])
 plt.suptitle(f"{simulator.output_names[0]}")
-plt.savefig("lipb_emulators/trained_emulator/weak_emulator.png")
+plt.savefig("lipb_emulators/trained_emulator_1/weak_emulator.png")
 
 print('initial emulator trained and plotted!')
 
@@ -55,25 +55,55 @@ y_train = torch.from_numpy(Y).squeeze().reshape(-1,1)
 
 ## ACTIVE LEARNING ##
 print('running active learning...')
+
 # build active learner 
 learner = stream.Random(
     simulator=simulator,
     emulator=emulator,
     x_train=x_train,
     y_train=y_train,
-    p_query=0.2,
+    p_query=0.3,
     show_progress=True,
 )
-print(x_train)
-print(y_train)
+
+# in case of failure, patch forward method
+original_forward = simulator.forward
+
+def safe_forward(x):
+    try:
+        return original_forward(x)
+    except Exception as e:
+        print(f"Simulation failed for inputs {x}: {e}")
+        return None
+
+simulator.forward = safe_forward
+
+# patch fit so learner keeps going
+original_fit = learner.fit
+
+def safe_fit(*args):
+    try:
+        return original_fit(*args)
+    except Exception as e:
+        print(f"Skipping failed simulation: {e}")
+
+learner.fit = safe_fit
+
 # stream samples
-X_stream = simulator.sample_inputs(20) # need sufficient amount to see metrics on plot 
-learner.fit_samples(X_stream, allow_failures=True)
+X_stream = simulator.sample_inputs(50) # need sufficient amount to see metrics on plot 
+learner.fit_samples(X_stream)
 
 # save emulator
 path = "lipb_emulators/trained_emulator_1"
 if not os.path.exists(path):
     os.makedirs(path)
+
+# save trained data
+x_np = learner.x_train.numpy() if hasattr(learner.x_train, 'numpy') else np.array(learner.x_train)
+y_np = learner.y_train.numpy() if hasattr(learner.y_train, 'numpy') else np.array(learner.y_train)
+
+np.savetxt(os.path.join(path, "trained_inputs.csv"), x_np, delimiter=",")
+np.savetxt(os.path.join(path, "trained_outputs.csv"), y_np, delimiter=",")
 
 emulator_filepath = os.path.join(path, "emulator.joblib")
 dump(learner.emulator, emulator_filepath)
@@ -89,7 +119,7 @@ for i, (k, v) in enumerate(learner.metrics.items()):
 axs[-1].set_xlabel("Iterations")
 
 axs[1].set_ylim(0, 1)
-plt.savefig("lipb_emulators/trained_emulator/learner_metrics.png")
+plt.savefig("lipb_emulators/trained_emulator_1/learner_metrics.png")
 
 # MEAN AND VARIANCE PLOT OF TRAINED EMULATOR
 fig_mean, axs = create_and_plot_slice(
@@ -101,16 +131,26 @@ fig_mean, axs = create_and_plot_slice(
 )
 plt.scatter(learner.x_train[:, 0], learner.x_train[:, 1])
 plt.suptitle(f"{simulator.output_names[0]}")
-plt.savefig("lipb_emulators/trained_emulator/strong_emulator.png")
+plt.savefig("lipb_emulators/trained_emulator_1/strong_emulator.png")
 
 print('trained model trained and plotted!')
 print('finishing plotting...')
 
 # COMPARE INITIAL AND TRAINED EMULATORS PLOT
+
+# original simulator
+simulator_original = FestimProblem(
+    parameters_range={
+        "v_in": (0.01, 2.1),
+        "c_in": (np.log10(1e15), np.log10(1e25)),
+    },  # ranges for each variable
+    output_names=["c_out"],
+)
+
 # test weak emulator
-X_test = simulator.sample_inputs(5)
+X_test = simulator_original.sample_inputs(5)
 Y_mean_weak, var_weak= emulator.predict_mean_and_variance(X_test)
-Y_true, _ = simulator.forward_batch(X_test)
+Y_true, _ = simulator_original.forward_batch(X_test, allow_failures=True)
 
 # test strong emulator
 Y_mean_strong, var_strong = learner.emulator.predict_mean_and_variance(X_test)
@@ -159,6 +199,6 @@ axs[1].tick_params(axis='y', labelsize=20)
 plt.legend()
 # plt.suptitle(f"Emulator Comparison")
 plt.tight_layout()
-plt.savefig("lipb_emulators/trained_emulator/compare_emulators.png")
+plt.savefig("lipb_emulators/trained_emulator_1/compare_emulators.png")
 
 print('plotting completed!')
