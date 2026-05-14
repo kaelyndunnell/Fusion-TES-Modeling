@@ -167,7 +167,7 @@ def build_festim_model(
     membrane_diss = htm.dissociation_coeffs.filter(material=htm.Metal).mean()
 
     my_model.method_interface = F.InterfaceMethod.penalty
-    penalty_term = 1e25
+    penalty_term = 1e29
 
     delta = 1
     if c_inlet < 1e21:
@@ -304,7 +304,7 @@ def build_festim_model(
     # SETTINGS
 
     my_model.settings = F.Settings(
-        atol=1e10, rtol=1e-10, transient=False, max_iterations=100
+        atol=1e10, rtol=1e-08, transient=False, max_iterations=100
     )
 
     # EXPORTS
@@ -338,12 +338,12 @@ def build_festim_model(
 if __name__ == "__main__":
 
     my_model = build_festim_model(
-        c_inlet=1e20,
+        c_inlet=1e24,
         residual_pressure=0,
         breeder="lipb",
-        openfoam_data_folder="openfoam/flibe_simple",
+        openfoam_data_folder="openfoam/velocity_parametrization/lipb/pipe_0.22m_s", # test one
         festim_mesh_file="meshing/tes_festim.msh",
-        results_folder="lipb_festim_results/benchmark",
+        results_folder="lipb_festim_results/benchmark_highcin",
     )
 
     # INITIALISE AND RUN
