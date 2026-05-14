@@ -13,6 +13,8 @@ import h_transport_materials as htm
 import os
 import re
 
+from Nb_recombination import nb_recomb
+
 
 def evaluate_stabalisation_term(mesh, u, delta):
     """See more at https://www.comsol.com/blogs/understanding-stabilization-methods"""
@@ -158,12 +160,7 @@ def build_festim_model(
     membrane_solubility_law = "SIEVERT"
 
     u = htm.ureg
-    membrane_recombo = htm.RecombinationCoeff(
-        pre_exp=1.88e-18,  # m4/s
-        act_energy=74 * u.kJ * u.mol**-1,
-        source="10.1238/Physica.Topical.103a00113",
-    )
-
+    membrane_recombo = nb_recomb
     membrane_diss = htm.dissociation_coeffs.filter(material=htm.Metal).mean()
 
     my_model.method_interface = F.InterfaceMethod.penalty
@@ -258,13 +255,11 @@ def build_festim_model(
         vacuum,
     ]
 
-    my_model.surface_to_volume = (
-        {  # anything defined for BC needs to be here (and exports)
-            inlet: breeder,
-            outlet: breeder,
-            vacuum: membrane,
-        }
-    )
+    my_model.surface_to_volume = {  # anything defined for BC needs to be here (and exports)
+        inlet: breeder,
+        outlet: breeder,
+        vacuum: membrane,
+    }
 
     T = F.Species("T", subdomains=my_model.volume_subdomains)
     my_model.species = [T]
@@ -336,12 +331,11 @@ def build_festim_model(
 
 
 if __name__ == "__main__":
-
     my_model = build_festim_model(
         c_inlet=1e24,
         residual_pressure=0,
         breeder="lipb",
-        openfoam_data_folder="openfoam/velocity_parametrization/lipb/pipe_0.22m_s", # test one
+        openfoam_data_folder="openfoam/velocity_parametrization/lipb/pipe_0.22m_s",  # test one
         festim_mesh_file="meshing/tes_festim.msh",
         results_folder="lipb_festim_results/benchmark_highcin",
     )
