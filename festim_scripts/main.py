@@ -16,29 +16,6 @@ import re
 from Nb_recombination import nb_recomb
 
 
-def evaluate_stabalisation_term(mesh, u, delta):
-    """See more at https://www.comsol.com/blogs/understanding-stabilization-methods"""
-
-    # evaluate Cell size
-    tdim = mesh.topology.dim
-    num_cells = mesh.topology.index_map(tdim).size_local
-    cells = np.arange(num_cells, dtype=np.int32)
-    mesh_ = _cpp.mesh.Mesh_float64(
-        mesh.comm, mesh.topology._cpp_object, mesh.geometry._cpp_object
-    )
-    h = _cpp.mesh.h(mesh_, tdim, cells)
-    V0 = fem.functionspace(mesh, ("DG", 0))
-    h_as_function = fem.Function(V0)
-    h_as_function.x.array[:] = h
-
-    # Compute magnitude of velocity
-    v_mag = ufl.sqrt(ufl.dot(u, u))
-
-    D_art = delta * v_mag * h_as_function
-
-    return D_art
-
-
 def findDir(basePath):
     names = []
     for root, dirs, files in os.walk(basePath):
@@ -64,9 +41,13 @@ def build_festim_model(
     # READ OPENFOAM MESH
     openfoam_final_time = findDir(openfoam_data_folder)
 
-    p, u, openfoam_mesh, nut, facet_meshtags, volume_meshtags = read_openfoam_data(
-        openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
+    p, of_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
+        read_openfoam_data(
+            openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
+        )
     )
+
+    nut.x.array[nut.x.array < 0.0] = 0.0  # ensure no negative eddy viscosity
 
     # READ GMSH MESH
     model_rank = 0
@@ -95,20 +76,10 @@ def build_festim_model(
     V_openfoam = fem.functionspace(openfoam_mesh, el)
     V_festim = fem.functionspace(festim_mesh, el)
 
-    u_openfoam = fem.Function(V_openfoam)
-    u_openfoam.interpolate(
-        u
-    )  # u is a fem.function.Function! paraview visualization of u_openfoam is accurate with this formulation
-    festim_velocity = fem.Function(V_festim)
-
     festim_cells = festim_mesh_data.cell_tags.find(1)  # breeder cells to interpolate to
 
     interpolation_data = fem.create_interpolation_data(
         V_to=V_festim, V_from=V_openfoam, cells=festim_cells
-    )
-
-    festim_velocity.interpolate_nonmatching(
-        u_openfoam, cells=festim_cells, interpolation_data=interpolation_data
     )
 
     # interpolate OpenFOAM nut field onto FESTIM mesh
@@ -126,10 +97,6 @@ def build_festim_model(
     festim_nut.interpolate_nonmatching(
         nut_openfoam, cells=festim_cells, interpolation_data=interpolation_data
     )
-
-    nut_field_array = festim_nut.x.array
-    nut_field_array[nut_field_array < 0.0] = 0.0  # ensure no negative eddy viscosity
-    festim_nut.x.array[:] = nut_field_array
 
     # BREEDER MATERIAL
 
@@ -166,25 +133,16 @@ def build_festim_model(
     my_model.method_interface = F.InterfaceMethod.penalty
     penalty_term = 1e29
 
-    delta = 1
-    if c_inlet < 1e21:
-        delta = 10
-
     D_0_breeder = breeder_diffusivity.pre_exp.magnitude  # m2/s,
     E_D_breeder = breeder_diffusivity.act_energy.magnitude  # eV
 
     D_fick = D_0_breeder * ufl.exp(-E_D_breeder / (F.k_B * breeder_temperature))
 
-    # add stabilization term for diffusion
-    D_art = evaluate_stabalisation_term(
-        mesh=festim_mesh, u=festim_velocity, delta=delta
-    )
-
     # add turbulent diffusion term
     Sc = 0.7
     D_turb = festim_nut / Sc
 
-    D_expr = D_fick + D_turb + D_art
+    D_expr = D_fick + D_turb
     V = fem.functionspace(festim_mesh, ("CG", 1))
     D_tot = fem.Function(V)
     D_tot.interpolate(fem.Expression(D_expr, V.element.interpolation_points))
@@ -193,7 +151,7 @@ def build_festim_model(
         my_writer_v_festim = VTXWriter(
             MPI.COMM_WORLD,
             results_folder + "/velocity_field.bp",
-            festim_velocity,
+            of_velocity,
             "BP5",
         )
         my_writer_v_festim.write(t=0)
@@ -202,13 +160,9 @@ def build_festim_model(
         )
         my_writer_D_field.write(t=0)
         my_writer_nut = VTXWriter(
-            MPI.COMM_WORLD, results_folder + "/festim_nut.bp", festim_nut, "BP5"
+            MPI.COMM_WORLD, results_folder + "/festim_nut.bp", nut, "BP5"
         )
         my_writer_nut.write(t=0)
-        my_writer_v_openfoam = VTXWriter(
-            MPI.COMM_WORLD, results_folder + "/openfoam_velocity.bp", u_openfoam, "BP5"
-        )
-        my_writer_v_openfoam.write(t=0)
 
     # MATERIALS
 
@@ -276,7 +230,7 @@ def build_festim_model(
 
     # SET TEMP AND BOUNDARY CONDITIONS
 
-    advection = F.AdvectionTerm(velocity=festim_velocity, subdomain=breeder, species=T)
+    advection = F.AdvectionTerm(velocity=of_velocity, subdomain=breeder, species=T)
     my_model.advection_terms = [advection]
 
     my_model.temperature = breeder_temperature  # K
@@ -310,9 +264,11 @@ def build_festim_model(
     concentration_field_membrane = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_membrane.bp", field=T, subdomain=membrane
     )
-    c_in = F.TotalSurface(field=T, surface=inlet, filename=f"{results_folder}/c_in.csv")
+    c_in = F.AverageSurface(
+        field=T, surface=inlet, filename=f"{results_folder}/c_in.csv"
+    )
 
-    c_out = F.TotalSurface(
+    c_out = F.AverageSurface(
         field=T, surface=outlet, filename=f"{results_folder}/c_out.csv"
     )
     permeation_flux = F.SurfaceFlux(
