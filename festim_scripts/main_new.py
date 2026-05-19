@@ -15,7 +15,8 @@ import re
 import meshio
 from Nb_recombination import nb_recomb
 
-N_A = 6.0221e23 # atms/mol
+N_A = 6.0221e23  # atms/mol
+
 
 def findDir(basePath):
     names = []
@@ -27,6 +28,7 @@ def findDir(basePath):
             except:
                 continue
     return np.max(names)
+
 
 def convert_med_to_xdmf(
     med_file,
@@ -72,7 +74,6 @@ def convert_med_to_xdmf(
     return correspondance_dict, cell_data_types
 
 
-
 def build_festim_model(
     c_inlet,
     residual_pressure,
@@ -84,12 +85,13 @@ def build_festim_model(
     penalty_term=1e20,
 ):
 
-
     # READ OPENFOAM MESH
     openfoam_final_time = findDir(openfoam_data_folder)
 
-    p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = read_openfoam_data(
-        openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
+    p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
+        read_openfoam_data(
+            openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
+        )
     )
 
     nut.x.array[nut.x.array < 0.0] = 0.0  # ensure no negative eddy viscosity
@@ -100,19 +102,19 @@ def build_festim_model(
         os.mkdir(results_folder)
         print(f"Results folder: {results_folder}")
 
-
     # READ FESTIM MESH
     correspondance_dict, cell_data_types = convert_med_to_xdmf(
-    festim_mesh_file,
-    cell_file=f"{results_folder}/mesh_domains.xdmf",
-    facet_file=f"{results_folder}/mesh_boundaries.xdmf",
+        festim_mesh_file,
+        cell_file=f"{results_folder}/mesh_domains.xdmf",
+        facet_file=f"{results_folder}/mesh_boundaries.xdmf",
     )
 
     for index, label in correspondance_dict.items():
         print(f"{index}: {label[0]}")
 
     festim_mesh = F.MeshFromXDMF(
-        volume_file=f"{results_folder}/mesh_domains.xdmf", facet_file=f"{results_folder}/mesh_boundaries.xdmf"
+        volume_file=f"{results_folder}/mesh_domains.xdmf",
+        facet_file=f"{results_folder}/mesh_boundaries.xdmf",
     )
 
     # DEFINE & INITIALIZE MODEL
@@ -125,7 +127,6 @@ def build_festim_model(
     mesh = my_model.mesh.mesh
     my_model.facet_meshtags = festim_mesh.define_surface_meshtags()
     my_model.volume_meshtags = festim_mesh.define_volume_meshtags()
-
 
     # interpolate OpenFOAM nut field onto FESTIM mesh
     festim_cells = my_model.volume_meshtags.find(6)  # breeder cells to interpolate to
@@ -179,8 +180,8 @@ def build_festim_model(
 
     # penalty_term = 1e43
 
-    if c_inlet < 1e20 /N_A:
-        penalty_term = penalty_term/100
+    if c_inlet < 1e20 / N_A:
+        penalty_term = penalty_term / 100
 
     D_0_breeder = breeder_diffusivity.pre_exp.magnitude  # m2/s,
     E_D_breeder = breeder_diffusivity.act_energy.magnitude  # eV
@@ -191,7 +192,7 @@ def build_festim_model(
     Sc = 0.7
     D_turb = festim_nut / Sc
 
-    D_expr = D_fick + D_turb 
+    D_expr = D_fick + D_turb
     V = fem.functionspace(mesh, ("CG", 1))
     D_tot = fem.Function(V)
     D_tot.interpolate(fem.Expression(D_expr, V.element.interpolation_points))
@@ -217,7 +218,7 @@ def build_festim_model(
 
     breeder_material = F.Material(
         D=D_tot,
-        K_S_0=breeder_solubility.pre_exp.magnitude / N_A,
+        K_S_0=breeder_solubility.pre_exp.to("mol/m**3/(Pa**0.5)").magnitude,
         E_K_S=breeder_solubility.act_energy.magnitude,
         solubility_law=breeder_solubility_law,
     )
@@ -225,7 +226,7 @@ def build_festim_model(
     membrane_material = F.Material(
         D_0=membrane_diffusivity.pre_exp.magnitude,
         E_D=membrane_diffusivity.act_energy.magnitude,
-        K_S_0=membrane_solubility.pre_exp.magnitude/ N_A,
+        K_S_0=membrane_solubility.pre_exp.to("mol/m**3/(Pa**0.5)").magnitude,
         E_K_S=membrane_solubility.act_energy.magnitude,
         solubility_law=membrane_solubility_law,
     )
@@ -241,7 +242,7 @@ def build_festim_model(
 
     inlet_marker = 8
     outlet_marker = 9
-    walls_marker = 10 
+    walls_marker = 10
     vacuum_marker = 11
 
     inlet = F.SurfaceSubdomain(id=inlet_marker)
@@ -258,13 +259,11 @@ def build_festim_model(
         vacuum,
     ]
 
-    my_model.surface_to_volume = (
-        {  # anything defined for BC needs to be here (and exports)
-            inlet: breeder,
-            outlet: breeder,
-            vacuum: membrane,
-        }
-    )
+    my_model.surface_to_volume = {  # anything defined for BC needs to be here (and exports)
+        inlet: breeder,
+        outlet: breeder,
+        vacuum: membrane,
+    }
 
     T = F.Species("T", subdomains=my_model.volume_subdomains)
     my_model.species = [T]
@@ -281,7 +280,9 @@ def build_festim_model(
 
     # SET TEMP AND BOUNDARY CONDITIONS
 
-    advection = F.AdvectionTerm(velocity=openfoam_velocity, subdomain=breeder, species=T)
+    advection = F.AdvectionTerm(
+        velocity=openfoam_velocity, subdomain=breeder, species=T
+    )
     my_model.advection_terms = [advection]
 
     my_model.temperature = breeder_temperature  # K
@@ -289,7 +290,7 @@ def build_festim_model(
     vacuum_TT_rxn = F.SurfaceReactionBC(
         reactant=[T, T],
         gas_pressure=residual_pressure,  # residual pressure from surrounding pipes
-        k_r0=membrane_recombo.pre_exp.magnitude * N_A,
+        k_r0=(membrane_recombo.pre_exp.to("m**4/(mol*s)")).magnitude,
         E_kr=membrane_recombo.act_energy.magnitude,
         k_d0=0,
         E_kd=0,
@@ -316,7 +317,9 @@ def build_festim_model(
     concentration_field_membrane = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_membrane.bp", field=T, subdomain=membrane
     )
-    c_in = F.AverageSurface(field=T, surface=inlet, filename=f"{results_folder}/c_in.csv")
+    c_in = F.AverageSurface(
+        field=T, surface=inlet, filename=f"{results_folder}/c_in.csv"
+    )
 
     c_out = F.AverageSurface(
         field=T, surface=outlet, filename=f"{results_folder}/c_out.csv"
@@ -337,17 +340,16 @@ def build_festim_model(
 
 
 if __name__ == "__main__":
-
-    for c_in in [1e16/N_A]:
-        for v_in in [0.05,2.90]:
+    for c_in in [1e20 / N_A]:
+        for v_in in [0.05, 2.90]:
             my_model = build_festim_model(
                 c_inlet=c_in,
                 residual_pressure=0,
                 breeder="lipb",
-                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb_new/pipe_{v_in:.2f}m_s_r0.10_l1.50", # test one
+                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb_new/pipe_{v_in:.2f}m_s_r0.10_l1.50",  # test one
                 festim_mesh_file="meshing/parametric_meshes/two_vol_0.0046_0.10_1.50.med",
                 results_folder=f"lipb_festim_results/with_meshes/in_{c_in}_vel_{v_in}_r0.10_l1.50_fixedBC",
-                penalty_term=1e-3
+                penalty_term=1e-3,
             )
 
             # INITIALISE AND RUN
