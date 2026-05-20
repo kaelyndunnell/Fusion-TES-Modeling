@@ -40,12 +40,13 @@ source "$CONDA_BASE/etc/profile.d/conda.sh"
 
 conda deactivate
 
-export UNV_DIR="$(echo "$mesh_folder" | xargs)"
+export MESH_DIR="$(echo "$mesh_folder" | xargs)"
 export BEND_R="$(echo "$bend_r" | xargs)"
 export LENGTH="$(echo "$length" | xargs)"
 
 export PYTHONWARNINGS="ignore::SyntaxWarning" # suppress salome warnings
 
-cd /opt/salome && /opt/salome/salome -t python "$SCRIPT_DIR/salome_unv_generation.py"
+cd /opt/salome && /opt/salome/salome -t python "$SCRIPT_DIR/one_vol_salome.py" # create one vol mesh 
+cd /opt/salome && /opt/salome/salome -t python "$SCRIPT_DIR/two_vol_salome.py" # create two vol mesh 
 
 conda activate tes-pav-env
