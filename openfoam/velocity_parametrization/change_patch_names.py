@@ -37,12 +37,20 @@ parser.add_argument(
 parser.add_argument(
     "--velocity", type=str, help="Inlet velocity of OpenFOAM case, in m/s."
 )
+parser.add_argument(
+    "--bend_radius", type=str, help="Bend radius of OpenFOAM case, in m."
+)
+parser.add_argument(
+    "--length", type=str, help="Length of OpenFOAM case, in m."
+)
 
 args = parser.parse_args()
 
 geometry = args.geometry
 breeder = args.breeder
 velocity = args.velocity
+bend_radius = args.bend_radius
+length = args.length
 
 replace_specific_variables(
     filename=breeder
@@ -50,7 +58,10 @@ replace_specific_variables(
     + geometry
     + "_"
     + velocity
-    + "m_s"
+    + "m_s_r"
+    + bend_radius
+    + "_l"
+    + length
     + "/constant/polyMesh/boundary",
     targets={"walls", "tank_walls"},
 )
