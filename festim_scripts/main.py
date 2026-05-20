@@ -87,12 +87,8 @@ def build_festim_model(
 
     # READ OPENFOAM MESH
     print("Reading OpenFOAM data...")
-    openfoam_final_time = findDir(openfoam_data_folder)
-
     p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
-        read_openfoam_data(
-            openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
-        )
+        read_openfoam_data(openfoam_data_folder + "/tes.foam")
     )
     print("OpenFOAM mesh read successfully.")
 
@@ -342,9 +338,8 @@ def build_festim_model(
 
 
 if __name__ == "__main__":
-
-    for c_in in [1e20/N_A]:
-        for v_in in [0.05,2.90]:
+    for c_in in [1e20 / N_A]:
+        for v_in in [0.05, 2.90]:
             my_model = build_festim_model(
                 c_inlet=c_in,
                 residual_pressure=0,
@@ -352,7 +347,7 @@ if __name__ == "__main__":
                 openfoam_data_folder=f"openfoam/velocity_parametrization/lipb_new/pipe_{v_in:.2f}m_s_r0.10_l1.50",  # test one
                 festim_mesh_file="meshing/parametric_meshes/two_vol_0.0046_0.10_1.50.med",
                 results_folder=f"lipb_festim_results/with_meshes/in_{c_in}_vel_{v_in}_r0.10_l1.50_fixedBC",
-                penalty_term=1e-2
+                penalty_term=1e-2,
             )
 
             # INITIALISE AND RUN
