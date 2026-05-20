@@ -90,9 +90,7 @@ def build_festim_model(
     openfoam_final_time = findDir(openfoam_data_folder)
 
     p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
-        read_openfoam_data(
-            openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
-        )
+        read_openfoam_data(openfoam_data_folder + "/tes.foam")
     )
     print("OpenFOAM mesh read successfully.")
 
