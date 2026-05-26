@@ -82,15 +82,17 @@ def build_festim_model(
     festim_mesh_file,
     results_folder,
     visualize_fields=True,
-    penalty_term=1e01,
+    penalty_term=1e20,
 ):
 
     # READ OPENFOAM MESH
-    print("Reading OpenFOAM data...")
+    openfoam_final_time = findDir(openfoam_data_folder)
+
     p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
-        read_openfoam_data(openfoam_data_folder + "/tes.foam")
+        read_openfoam_data(
+            openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
+        )
     )
-    print("OpenFOAM mesh read successfully.")
 
     nut.x.array[nut.x.array < 0.0] = 0.0  # ensure no negative eddy viscosity
 
@@ -216,7 +218,7 @@ def build_festim_model(
 
     breeder_material = F.Material(
         D=D_tot,
-        K_S_0=breeder_solubility.pre_exp.magnitude / N_A,
+        K_S_0=breeder_solubility.pre_exp.to("mol/m**3/(Pa**0.5)").magnitude,
         E_K_S=breeder_solubility.act_energy.magnitude,
         solubility_law=breeder_solubility_law,
     )
@@ -224,7 +226,7 @@ def build_festim_model(
     membrane_material = F.Material(
         D_0=membrane_diffusivity.pre_exp.magnitude,
         E_D=membrane_diffusivity.act_energy.magnitude,
-        K_S_0=membrane_solubility.pre_exp.magnitude / N_A,
+        K_S_0=membrane_solubility.pre_exp.to("mol/m**3/(Pa**0.5)").magnitude,
         E_K_S=membrane_solubility.act_energy.magnitude,
         solubility_law=membrane_solubility_law,
     )
@@ -257,11 +259,13 @@ def build_festim_model(
         vacuum,
     ]
 
-    my_model.surface_to_volume = {  # anything defined for BC needs to be here (and exports)
-        inlet: breeder,
-        outlet: breeder,
-        vacuum: membrane,
-    }
+    my_model.surface_to_volume = (
+        {  # anything defined for BC needs to be here (and exports)
+            inlet: breeder,
+            outlet: breeder,
+            vacuum: membrane,
+        }
+    )
 
     T = F.Species("T", subdomains=my_model.volume_subdomains)
     my_model.species = [T]
@@ -288,7 +292,7 @@ def build_festim_model(
     vacuum_TT_rxn = F.SurfaceReactionBC(
         reactant=[T, T],
         gas_pressure=residual_pressure,  # residual pressure from surrounding pipes
-        k_r0=membrane_recombo.pre_exp.magnitude * N_A,
+        k_r0=(membrane_recombo.pre_exp.to("m**4/(mol*s)")).magnitude,
         E_kr=membrane_recombo.act_energy.magnitude,
         k_d0=0,
         E_kd=0,
@@ -304,7 +308,7 @@ def build_festim_model(
     # SETTINGS
 
     my_model.settings = F.Settings(
-        atol=1e-7, rtol=1e-10, transient=False, max_iterations=100
+        atol=1e-10, rtol=1e-10, transient=False, max_iterations=100
     )
 
     # EXPORTS
@@ -347,7 +351,7 @@ if __name__ == "__main__":
                 openfoam_data_folder=f"openfoam/velocity_parametrization/lipb_new/pipe_{v_in:.2f}m_s_r0.10_l1.50",  # test one
                 festim_mesh_file="meshing/parametric_meshes/two_vol_0.0046_0.10_1.50.med",
                 results_folder=f"lipb_festim_results/with_meshes/in_{c_in}_vel_{v_in}_r0.10_l1.50_fixedBC",
-                penalty_term=1e-2,
+                penalty_term=1e-3,
             )
 
             # INITIALISE AND RUN
