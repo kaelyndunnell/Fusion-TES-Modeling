@@ -21,10 +21,10 @@ from openfoam.LiPb_properties import (
     calculate_LiPb_kinematic_viscosity,
     calculate_initial_k,
     calculate_initial_omega,
-    calculate_reynolds_number,
 )
 from openfoam.change_variable_openfoam import change_variable_in_openfoam_file
 
+N_A = 6.0221e23 # atms/mol
 
 def create_folders(
     new_folder_path, bench_folder_path, openfoam_mesh, turbulent_variables_dict
@@ -57,55 +57,42 @@ def create_folders(
 class FestimProblem(Simulator):
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         try:
-            v_in = x[:, 0]
+            # CREATE MESH
+
+            if os.path.isdir(f"{parent_dir}/meshing/parametric_meshes"):
+                print("Meshes will be dumped into meshing/parametric_meshes.")
+            else:
+                os.mkdir(f"{parent_dir}/meshing/parametric_meshes")
+            
+            bend_radius = x[:,0]
+            length = x[:,1]
+
+            # convert to floats
+            bend_radius = round(bend_radius.item(), 2)
+            length = round(length.item(), 2)
+
+            # bend_radius = 0.10
+            # length = 1.50
+
+            subprocess.run(
+                [
+                    f"{parent_dir}/meshing/run_salome.sh",
+                    "-m", f"{parent_dir}/meshing/parametric_meshes",  # meshing folder
+                    "-r", f"{bend_radius}",  # bend radius (m)
+                    "-l", f"{length}",  # pipe length (m)
+                ]
+            )
+
+            v_in = x[:, 2]
 
             # convert to floats
             v_in = v_in.item()
             v_in = round(v_in, 2)
 
-            # # CREATE OPENFOAM MODEL
-            # tank_inlet_diameter = 0.0275 * 2
-
-            # Re = calculate_reynolds_number(
-            #     v_in, tank_inlet_diameter, kinematic_viscosity, breeder, suppress_print=True
-            # )
-            # k = calculate_initial_k(v_in)
-            # omega = calculate_initial_omega(k, tank_inlet_diameter)
-
-            # tank_variables_dict = {
-            #     "U": [0.5, v_in],
-            #     "k": [0.000937, k],
-            #     "omega": [0.43, omega],
-            # }
+            # v_in = 1.40
 
             # BREEDER/OPENFOAM PARAMETERS
             inlet_diameter = 9e-3  # m from CAD
-            k_b = F.k_B  # eV/K, boltzmann constant
-
-            # breeder parameters
-            breeder = "lipb"
-            breeder_temperature = 603.15  # K from Utili 2023
-            LiPb_density = (
-                10520.35 - 1.19051 * breeder_temperature
-            )  # kg/m3 ; equation from Martelli 2019
-
-            lipb_diffusivity = (
-                htm.diffusivities.filter(material=htm.LIPB)
-                .filter(exclude=True, isotope="H")
-                .filter(exclude=True, isotope="D")
-                .mean()
-            )
-            E_D = lipb_diffusivity.act_energy.magnitude  # eV
-            D_0 = lipb_diffusivity.pre_exp.magnitude  # m2/s
-            LiPb_diffusivity = D_0 * np.exp(-E_D / (k_b * breeder_temperature))  # m2/s
-
-            kinematic_viscosity = calculate_LiPb_kinematic_viscosity(
-                breeder_temperature, LiPb_density, breeder, suppress_print=True
-            )
-
-            Re = calculate_reynolds_number(
-                v_in, inlet_diameter, kinematic_viscosity, breeder, suppress_print=True
-            )
             k = calculate_initial_k(v_in)
             omega = calculate_initial_omega(k, inlet_diameter)
 
@@ -115,30 +102,18 @@ class FestimProblem(Simulator):
                 "omega": [0.43, omega],
             }
 
-            # # TANK PATHS
-            # TANK_NEW_FOLDER = f"{parent_dir}/openfoam/velocity_parametrization/lipb/inlet_tank_{v_in:.2f}m_s"
-            # TANK_BENCH_FOLDER = f"{parent_dir}/openfoam/inlet_tank"
-            # TANK_MESH = f"{parent_dir}/meshing/inlet_tank.msh"
-
             # PIPE_PATHS
             PIPE_NEW_FOLDER = (
-                f"{parent_dir}/openfoam/velocity_parametrization/lipb/pipe_{v_in:.2f}m_s"
+                f"{parent_dir}/openfoam/velocity_parametrization/lipb/pipe_{v_in:.2f}m_s_r{bend_radius:.2f}_l{length:.2f}"
             )
             PIPE_BENCH_FOLDER = f"{parent_dir}/openfoam/lipb_simple"
-            PIPE_MESH = f"{parent_dir}/meshing/tes_openfoam.msh"
+            PIPE_MESH = f"{parent_dir}/meshing/parametric_meshes/one_vol_0.0046_{bend_radius:.2f}_{length:.2f}.unv"
 
+            
             if os.path.isdir(PIPE_NEW_FOLDER):
                 print("Skipping to FESTIM simulation.")
             else:
-                # # make tank folders
-                # create_folders(
-                #     new_folder_path=TANK_NEW_FOLDER,
-                #     bench_folder_path=TANK_BENCH_FOLDER,
-                #     openfoam_mesh=TANK_MESH,
-                #     turbulent_variables_dict=tank_variables_dict,
-                # )
-
-                # make pipe folders
+            # make pipe folders
                 create_folders(
                     new_folder_path=PIPE_NEW_FOLDER,
                     bench_folder_path=PIPE_BENCH_FOLDER,
@@ -146,36 +121,27 @@ class FestimProblem(Simulator):
                     turbulent_variables_dict=variables_dict,
                 )
 
-                # # RUN OPENFOAM TANK MODEL
-                # subprocess.run(
-                #     [
-                #         f"{parent_dir}/openfoam/velocity_parametrization/run_tank_case.sh",
-                #         "-p " + TANK_NEW_FOLDER,  # case pathway
-                #         "-b " + breeder,  # breeder
-                #         "-v " + f"{v_in:.2f}",  # velocity
-                #     ]
-                # )
-
                 # RUN OPENFOAM MODEL
                 subprocess.run(
                     [
                         f"{parent_dir}/openfoam/velocity_parametrization/run_pipe_case.sh",
                         "-p " + PIPE_NEW_FOLDER,  # pipe case pathway
-                        "-b " + breeder,  # breeder
+                        "-b " + f"lipb",  # breeder
                         "-v " + f"{v_in:.2f}",  # velocity
+                        "-m" + PIPE_MESH, # mesh file
+                        "-r" + f"{bend_radius:.2f}", # bend radius
+                        "-l" + f"{length:.2f}", # length
                     ]
                 )
 
             # solutions file
             openfoam_output = PIPE_NEW_FOLDER
 
-            c_in = x[:, 1]
-            # residual_pressure = x[:, 2]
+            c_in = x[:, 3]
 
             # convert to float
             c_in = 10**(c_in.item())
-            # c_in = 10**c_in
-            print(c_in)
+            print(f"Proceeding for inlet concentration of {c_in} T/m3.")
 
             # FESTIM MODEL
             model = build_festim_model(
@@ -183,8 +149,8 @@ class FestimProblem(Simulator):
                 residual_pressure=0.0,
                 breeder="lipb",
                 openfoam_data_folder=openfoam_output,
-                festim_mesh_file=f"{parent_dir}/meshing/tes_festim.msh",
-                results_folder=f"lipb_festim_results/emulator_2/inlet_{c_in}_velocity_{v_in}",
+                festim_mesh_file=f"{parent_dir}/meshing/parametric_meshes/two_vol_0.0046_{bend_radius:.2f}_{length:.2f}.med", 
+                results_folder=f"lipb_festim_results/with_meshes/in_{c_in:.2e}_vel_{v_in:.2e}_bend_{bend_radius:.2f}_len_{length:.2f}",
             )
 
             # solve the model
@@ -198,9 +164,15 @@ class FestimProblem(Simulator):
             if c_out is None or np.isnan(c_out): # flag error
                 raise ValueError(f"Invalid output: {c_out}")
             
-            y = torch.tensor([c_out]).T
+            y = torch.tensor([c_out, permeation_flux]).T
+            y = np.log10(y)
+
+            # ensure the output is a 2D tensor
+            if y.ndim == 1:
+                y = y.unsqueeze(1)
+
             return y
-        
+    
         except Exception as e: # raise error
             print(f"Simulation failed for inputs {x}: {e}")
             raise 
@@ -210,19 +182,26 @@ if __name__ == "__main__":
     # set up model
     simulator = FestimProblem(
         parameters_range={
-            "v_in": (0.01, 2.1),
-            "c_in": (np.log10(1e15), np.log10(1e25)),
+            "bend_radius": (0.02,2),
+            "length": (1,8),
+            "v_in": (0.01, 3.5),
+            "c_in": (np.log10(1e24/N_A), np.log10(1e25/N_A)),
         },  # ranges for each variable
-        # output_names=["c_out", "permeation_flux"],
-        output_names=["c_out"],
+        output_names=["c_out", "permeation_flux"],
     )
 
     # training data
-    n_samples = 25
+    n_samples = 1
 
     X = simulator.sample_inputs(n_samples)
     Y, _ = simulator.forward_batch(X, allow_failures=True)
-    Y = np.log10(Y)
 
-    np.savetxt("lipb_emulators/emulator_2/inputs.csv", X, delimiter=",")
-    np.savetxt("lipb_emulators/emulator_2/outputs.csv", Y, delimiter=",")
+    results_folder = "lipb_emulators/parametric_mesh"
+
+    if os.path.isdir(results_folder):
+        print(f"Results will be dumped into {results_folder}")
+    else:
+        os.mkdir(results_folder)
+
+    np.savetxt(f"{results_folder}/inputs.csv", X, delimiter=",")
+    np.savetxt(f"{results_folder}/outputs.csv", Y, delimiter=",")
