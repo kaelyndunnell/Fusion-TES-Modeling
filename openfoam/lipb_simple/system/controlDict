@@ -22,13 +22,13 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         10000;          // Number of iterations for steady-state
+endTime         5000;          // Number of iterations for steady-state
 
 deltaT          1;            // Time step (irrelevant for steady-state, but kept)
 
 writeControl    timeStep;
 
-writeInterval   100;         // Write every 10 iterations
+writeInterval   1500;         // Write every 2000 iterations
 
 purgeWrite      0;
 

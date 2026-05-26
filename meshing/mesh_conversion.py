@@ -19,8 +19,8 @@ def convert_mesh(openfoam: bool):
         write_path = "meshing/tes_openfoam.msh"
     else:
         # festim two vols paths
-        mesh_file_path = "meshing/CAD/cubit_files/test_two_vols.e"
-        write_path = "meshing/test_festim.msh"
+        mesh_file_path = "meshing/CAD/cubit_files/simple_2vols.e"
+        write_path = "meshing/tes_festim.msh"
 
     mesh = meshio.read(mesh_file_path)
     print("cell types:", [b.type for b in mesh.cells])
@@ -142,29 +142,29 @@ if __name__ == "__main__":
 
     # testing tag data
 
-    # READ GMSH MESH
-    model_rank = 0
-    festim_mesh_data = gmshio.read_from_msh(
-        "meshing/test_festim.msh", MPI.COMM_WORLD, model_rank, gdim=3
-    )
-    festim_mesh = festim_mesh_data.mesh
+    # # READ GMSH MESH
+    # model_rank = 0
+    # festim_mesh_data = gmshio.read_from_msh(
+    #     "meshing/tes_festim.msh", MPI.COMM_WORLD, model_rank, gdim=3
+    # )
+    # festim_mesh = festim_mesh_data.mesh
 
-    # export tagging
-    with XDMFFile(
-        MPI.COMM_WORLD, "lipb_festim_results/benchmark/mesh_volume_tags.xdmf", "w"
-    ) as xdmf:
-        xdmf.write_mesh(festim_mesh)
-        xdmf.write_meshtags(festim_mesh_data.cell_tags, festim_mesh.geometry)  # volumes
+    # # export tagging
+    # with XDMFFile(
+    #     MPI.COMM_WORLD, "lipb_festim_results/benchmark/mesh_volume_tags.xdmf", "w"
+    # ) as xdmf:
+    #     xdmf.write_mesh(festim_mesh)
+    #     xdmf.write_meshtags(festim_mesh_data.cell_tags, festim_mesh.geometry)  # volumes
 
-    festim_mesh.topology.create_connectivity(
-        festim_mesh.topology.dim - 1, festim_mesh.topology.dim
-    )
-    with XDMFFile(
-        MPI.COMM_WORLD, "lipb_festim_results/benchmark/mesh_facet_tags.xdmf", "w"
-    ) as xdmf:
-        xdmf.write_mesh(festim_mesh)
-        xdmf.write_meshtags(
-            festim_mesh_data.facet_tags, festim_mesh.geometry
-        )  # surfaces
+    # festim_mesh.topology.create_connectivity(
+    #     festim_mesh.topology.dim - 1, festim_mesh.topology.dim
+    # )
+    # with XDMFFile(
+    #     MPI.COMM_WORLD, "lipb_festim_results/benchmark/mesh_facet_tags.xdmf", "w"
+    # ) as xdmf:
+    #     xdmf.write_mesh(festim_mesh)
+    #     xdmf.write_meshtags(
+    #         festim_mesh_data.facet_tags, festim_mesh.geometry
+    #     )  # surfaces
 
-    print("xdmf files written.")
+    # print("xdmf files written.")

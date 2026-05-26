@@ -1,4 +1,4 @@
-from fluid_parameters import (
+from .fluid_parameters import (
     calculate_reynolds_number,
     plot_reynolds_number_vs_inlet_velocity,
     calculate_initial_k,
@@ -84,5 +84,10 @@ print(f"Initial turbulence dissipation rate for {breeder}: {epsilon} m2/s3")
 print(f"Initial specific dissipation rate for {breeder}: {omega} 1/s")
 
 # plot_reynolds_number_vs_inlet_velocity(
-#     inlet_diameter, kinematic_viscosity, breeder_temperature, breeder, inlet_velocity
+#     inlet_diameter,
+#     kinematic_viscosity,
+#     breeder_temperature,
+#     breeder,
+#     inlet_velocity,
+#     flibe=True,
 # )
