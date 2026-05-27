@@ -11,6 +11,8 @@ lipb/
 *.vscode
 polyMesh/
 test/
+lipb_new/
+parametric_meshes/
 
 # User-specific files
 *.rsuser

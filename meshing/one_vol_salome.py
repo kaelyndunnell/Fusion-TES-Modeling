@@ -81,6 +81,15 @@ def build_and_export(tube_radius, bl_thickness, bend_radius, length, unv_dir,
     # 335, 274, 313, 359, 343, 351, 300, 287, 376, 410, 419, 400, 413, 416, 384, 392
     geompy.UnionIDs(walls, [335, 274, 313, 359, 343, 351, 300, 287, 376, 410, 419, 400, 413, 416, 384, 392])
     
+    # --- Identify axial edges for sub-mesh ---
+    all_edges   = geompy.ExtractShapes(two_vol, geompy.ShapeType["EDGE"], True)
+    axial_edges = [e for e in all_edges
+                   if geompy.BasicProperties(e)[0] > tube_radius * 2]
+    print("  Axial edges: {}".format(len(axial_edges)))
+
+    axial_group = geompy.CreateGroup(two_vol, geompy.ShapeType["EDGE"])
+    geompy.UnionList(axial_group, axial_edges)
+    
     # --- Mesh ---
     mesh_name = "one_vol_{}_{:.2f}_{:.2f}".format(
         tube_radius, bend_radius, length)
@@ -90,6 +99,10 @@ def build_and_export(tube_radius, bl_thickness, bend_radius, length, unv_dir,
     Regular_1D_global.NumberOfSegments(radial_segments, 1.0, [])
     Mesh_1.Quadrangle(algo=smeshBuilder.QUADRANGLE)
     Mesh_1.Hexahedron(algo=smeshBuilder.Hexa)
+
+    # Axial sub-mesh
+    Regular_1D_axial = Mesh_1.Segment(geom=axial_group)
+    Regular_1D_axial.NumberOfSegments(n_segments, growth_rate, [])
 
     isDone = Mesh_1.Compute()
     Mesh_1.CheckCompute()
@@ -121,9 +134,9 @@ if __name__ == '__main__':
     bend_r  = float(os.environ.get('BEND_R',   15.0))
     length  = float(os.environ.get('LENGTH',   40.0))
     unv_dir = os.environ.get('MESH_DIR')
-    n_seg   = int(float(os.environ.get('N_SEGMENTS',  30)))
+    n_seg   = int(float(os.environ.get('N_SEGMENTS',  150))) # 90 passed mesh check, 150 for LES
     growth  = float(os.environ.get('GROWTH_RATE', 1.0))
-    radial  = int(float(os.environ.get('RADIAL_SEGS', 15)))
+    radial  = int(float(os.environ.get('RADIAL_SEGS', 30)))
 
     print("--- tube_r={} bl_t={} bend_r={} length={} ---".format(
         tube_r, bl_t, bend_r, length))
