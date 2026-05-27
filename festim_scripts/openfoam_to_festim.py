@@ -9,12 +9,15 @@ from dolfinx.mesh import meshtags, exterior_facet_indices
 from scipy.spatial import cKDTree
 
 
-def read_openfoam_data(file_name, final_time):
+def read_openfoam_data(file_name):
     """
     Read OpenFOAM data from a file and return the pressure, velocity, and viscosity (if it exists) fields.
     """
     print("Reading OpenFOAM data...")
     openfoam_reader = OpenFOAMReader(filename=file_name, cell_type=12)
+
+    final_time = max(openfoam_reader.times)
+
     p = openfoam_reader.create_dolfinx_function(t=final_time, name="p")
     u = openfoam_reader.create_dolfinx_function(t=final_time, name="U")
     mesh = openfoam_reader.dolfinx_meshes_dict["default"]
@@ -123,6 +126,6 @@ def define_meshtags(cfd_reader):
 
 if __name__ == "__main__":
     # read openfoam data
-    p, u = read_openfoam_data("OpenFOAM/probe-case/case.foam", final_time=100)
+    p, u = read_openfoam_data("OpenFOAM/probe-case/case.foam")
 
     export_openfoam_data(p, u)
