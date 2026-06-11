@@ -22,30 +22,7 @@ RAS
 
     turbulence      on;
 
-    viscosityModel  Newtonian;
 }
 
-// simulationType LES;
-
-// LES
-// {
-//     model           dynamicKEqn;
-
-//     turbulence      on;
-
-
-//     delta           cubeRootVol;
-
-//     dynamicKEqnCoeffs
-//     {
-//         filter simple;
-//     }
-
-//     cubeRootVolCoeffs
-//     {
-//         deltaCoeff      1;
-//     }
-
-// }
 
 // ************************************************************************* //

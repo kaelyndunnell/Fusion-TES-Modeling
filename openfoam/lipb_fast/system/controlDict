@@ -22,7 +22,7 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         5000;          // Number of iterations for steady-state
+endTime         20000;          // Number of iterations for steady-state
 
 deltaT          1;            // Time step (irrelevant for steady-state, but kept)
 

@@ -29,7 +29,7 @@ solvers
         $p;
     }
 
-    U
+    "(k|U|nut|omega)"
     {
         solver          smoothSolver;
         smoother        GaussSeidel;
@@ -38,43 +38,18 @@ solvers
         nSweeps         1;
     }
 
-    k
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        tolerance       1e-8;
-        relTol          0.1;
-        nSweeps         1;
-    }
-
-    omega
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        tolerance       1e-8;
-        relTol          0.1;
-        nSweeps         1;
-    }
-    epsilon
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        tolerance       1e-8;
-        relTol          0.1;
-        nSweeps         1;
-    }
 }
 
 SIMPLE
 {
-    nNonOrthogonalCorrectors 2;
+    nNonOrthogonalCorrectors 0;
     consistent yes;
 
     residualControl
     {
-        p               1e-5;
-        U               1e-6;
-        "(k|omega)" 1e-5;
+        p               1e-4;
+        U               1e-5;
+        "(k|omega)" 1e-4;
     }
 }
 
@@ -87,9 +62,9 @@ relaxationFactors
 {
     equations
     {
-        U               0.4; 
-        p               0.3;
-        "(k|epsilon|omega)" 0.3;
+        U               0.2; 
+        p               0.1;
+        "(k|epsilon|omega)" 0.1;
     }
 }
 
