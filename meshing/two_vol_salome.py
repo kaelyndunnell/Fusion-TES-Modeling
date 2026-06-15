@@ -146,8 +146,8 @@ if __name__ == '__main__':
     length  = float(os.environ.get('LENGTH',   1.0))
     # unv_dir = os.environ.get('UNV_DIR')
     med_dir = os.environ.get('MESH_DIR')
-    n_seg   = int(float(os.environ.get('N_SEGMENTS',  200)))
-    growth  = float(os.environ.get('GROWTH_RATE', 1.0))
+    n_seg   = int(float(os.environ.get('N_SEGMENTS', round(length*65))))
+    growth  = float(os.environ.get('GROWTH_RATE', 1.1))
     radial  = int(float(os.environ.get('RADIAL_SEGS', 8)))
 
     print("--- tube_r={} bl_t={} wall_t={} bend_r={} length={} ---".format(

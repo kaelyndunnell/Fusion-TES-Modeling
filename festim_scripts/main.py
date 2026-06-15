@@ -82,15 +82,13 @@ def build_festim_model(
     festim_mesh_file,
     results_folder,
     visualize_fields=True,
-    penalty_term=1e20,
+    penalty_term=1e-3,
 ):
 
     # READ OPENFOAM MESH
-    openfoam_final_time = findDir(openfoam_data_folder)
-
     p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
         read_openfoam_data(
-            openfoam_data_folder + "/tes.foam", final_time=openfoam_final_time
+            openfoam_data_folder + "/tes.foam"
         )
     )
 
@@ -160,7 +158,7 @@ def build_festim_model(
         .mean()
     )
     breeder_solubility_law = "SIEVERT"
-    breeder_temperature = 603.15  # K
+    breeder_temperature = 723.15 # K from https://doi.org/10.3390/en16073022
 
     # membrane material (Nb for LiPb)
 
@@ -178,10 +176,10 @@ def build_festim_model(
 
     my_model.method_interface = F.InterfaceMethod.penalty
 
-    # penalty_term = 1e43
-
-    if c_inlet < 1e20 / N_A:
+    if c_inlet < 1e21 / N_A:
         penalty_term = penalty_term / 100
+    elif c_inlet > 1e24 / N_A:
+        penalty_term = penalty_term * 100
 
     D_0_breeder = breeder_diffusivity.pre_exp.magnitude  # m2/s,
     E_D_breeder = breeder_diffusivity.act_energy.magnitude  # eV
@@ -301,14 +299,21 @@ def build_festim_model(
 
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(subdomain=inlet, value=c_inlet, species=T),
-        # F.FixedConcentrationBC(subdomain=vacuum, value=0, species=T),
         vacuum_TT_rxn,
     ]
 
     # SETTINGS
+    if c_inlet >= 1e24 / N_A:
+        atol = 1e0
+    elif c_inlet >= 1e22 / N_A:
+        atol = 1e-05
+    elif c_inlet >= 1e19 / N_A:
+        atol = 1e-07
+    else:
+        atol = 1e-10
 
     my_model.settings = F.Settings(
-        atol=1e-10, rtol=1e-10, transient=False, max_iterations=100
+        atol=atol, rtol=1e-10, transient=False, max_iterations=100 
     )
 
     # EXPORTS
@@ -342,19 +347,21 @@ def build_festim_model(
 
 
 if __name__ == "__main__":
-    for c_in in [1e20 / N_A]:
-        for v_in in [0.05, 2.90]:
-            my_model = build_festim_model(
-                c_inlet=c_in,
-                residual_pressure=0,
-                breeder="lipb",
-                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb_new/pipe_{v_in:.2f}m_s_r0.10_l1.50",  # test one
-                festim_mesh_file="meshing/parametric_meshes/two_vol_0.0046_0.10_1.50.med",
-                results_folder=f"lipb_festim_results/with_meshes/in_{c_in}_vel_{v_in}_r0.10_l1.50_fixedBC",
-                penalty_term=1e-3,
-            )
+    v_in = 0.42 # m/s
+    bend_r = 0.07
+    length = 0.89
+    for c_in in [7.79e-01]:
+        my_model = build_festim_model(
+            c_inlet=c_in,
+            residual_pressure=0,
+            breeder="lipb",
+            openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{v_in:.2f}m_s_r{bend_r:.2f}_l{length:.2f}",  
+            festim_mesh_file=f"meshing/parametric_meshes/two_vol_0.0046_{bend_r:.2f}_{length:.2f}.med",
+            results_folder=f"lipb_festim_results/parametric_mesh/in_{c_in}_vel_{v_in:.2f}_r{bend_r:.2f}_l{length:.2f}",
+            penalty_term=1e-1,
+        )
 
-            # INITIALISE AND RUN
-            my_model.initialise()
-            set_log_level(LogLevel.INFO)
-            my_model.run()
+        # INITIALISE AND RUN
+        my_model.initialise()
+        set_log_level(LogLevel.INFO)
+        my_model.run()

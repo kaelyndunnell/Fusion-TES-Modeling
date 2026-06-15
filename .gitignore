@@ -13,6 +13,7 @@ polyMesh/
 test/
 lipb_new/
 parametric_meshes/
+lipb_emulators/
 
 # User-specific files
 *.rsuser

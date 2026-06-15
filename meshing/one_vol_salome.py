@@ -130,13 +130,13 @@ def build_and_export(tube_radius, bl_thickness, bend_radius, length, unv_dir,
 # ---------------------------------------------------------------------------
 if __name__ == '__main__':
     tube_r  = float(os.environ.get('TUBE_R',    0.0046))
-    bl_t    = float(os.environ.get('BL_T',      tube_r/8))
+    bl_t    = float(os.environ.get('BL_T',      tube_r/12))
     bend_r  = float(os.environ.get('BEND_R',   15.0))
     length  = float(os.environ.get('LENGTH',   40.0))
     unv_dir = os.environ.get('MESH_DIR')
-    n_seg   = int(float(os.environ.get('N_SEGMENTS',  150))) # 90 passed mesh check, 150 for LES
-    growth  = float(os.environ.get('GROWTH_RATE', 1.0))
-    radial  = int(float(os.environ.get('RADIAL_SEGS', 30)))
+    n_seg   = int(float(os.environ.get('N_SEGMENTS',  round(length*100)))) 
+    growth  = float(os.environ.get('GROWTH_RATE', 1.1))
+    radial  = int(float(os.environ.get('RADIAL_SEGS', 10)))
 
     print("--- tube_r={} bl_t={} bend_r={} length={} ---".format(
         tube_r, bl_t, bend_r, length))
