@@ -1,6 +1,7 @@
 import os
 import re
 import csv
+import numpy as np
 
 FOLDER_RE = re.compile(
     r"in_(?P<in>[0-9eE+\-.]+)"
@@ -36,12 +37,14 @@ def main():
         c_out  = last_value(c_out_path)
         flux   = last_value(flux_path)
         rows_x.append([
-            float(m.group("in")),
+            np.log10(float(m.group("in"))),
             float(m.group("vel")),
             float(m.group("r")),
             float(m.group("l")),
         ])
-        rows_y.append([c_out, flux])
+        if flux < 0 and abs(flux) < 1e-22:
+            flux = abs(flux)
+        rows_y.append([np.log10(c_out), np.log10(flux)])
 
     if not rows_x:
         print("No valid simulation folders found. Nothing written.")

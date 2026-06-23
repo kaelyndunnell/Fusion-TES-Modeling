@@ -306,9 +306,9 @@ def build_festim_model(
     if c_inlet >= 1e24 / N_A:
         atol = 1e0
     elif c_inlet >= 1e22 / N_A:
-        atol = 1e-05
+        atol = 1e-03
     elif c_inlet >= 1e19 / N_A:
-        atol = 1e-07
+        atol = 1e-05
     else:
         atol = 1e-10
 
@@ -347,10 +347,10 @@ def build_festim_model(
 
 
 if __name__ == "__main__":
-    v_in = 0.42 # m/s
-    bend_r = 0.07
-    length = 0.89
-    for c_in in [7.79e-01]:
+    v_in = 0.48 # m/s
+    bend_r = 0.09
+    length = 0.87
+    for c_in in [2.43e-05]:
         my_model = build_festim_model(
             c_inlet=c_in,
             residual_pressure=0,
