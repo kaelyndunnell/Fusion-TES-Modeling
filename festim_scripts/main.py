@@ -1,6 +1,7 @@
 import festim as F  # using festim2
 import numpy as np
 from dolfinx import fem
+from scifem import assemble_scalar
 from dolfinx.io import VTXWriter
 import ufl
 from dolfinx import cpp as _cpp
@@ -17,6 +18,58 @@ from Nb_recombination import nb_recomb
 
 N_A = 6.0221e23  # atms/mol
 
+class SurfaceAdvectionFlux(F.SurfaceFlux):
+    """Computes the advection flux of a field on a given surface
+
+    Args:
+        field (festim.Species): species for which the surface flux is computed
+        surface (festim.SurfaceSubdomain1D): surface subdomain
+        filename (str, optional): name of the file to which the surface flux is exported
+
+    Attributes:
+        see `festim.SurfaceFlux`
+    """
+
+    def __init__(self, field, surface, filename, velocity_field):
+
+        super().__init__(field=field, surface=surface, filename=filename)
+        self.velocity_field = velocity_field
+
+    @property
+    def title(self):
+        return f"{self.field.name} advection flux surface {self.surface.id}"
+
+    def compute(self, u, ds: ufl.Measure, entity_maps=None):
+        if isinstance(u, ufl.indexed.Indexed):
+            mesh = self.field.sub_function_space.mesh
+        else:
+            mesh = u.function_space.mesh
+
+        n = ufl.FacetNormal(mesh)
+
+        # Diffusive flux
+        surface_flux = assemble_scalar(
+            fem.form(
+                -self.D * ufl.dot(ufl.grad(u), n) * ds(self.surface.id),
+                entity_maps=entity_maps,
+            )
+        )
+
+        # Advective flux — interpolate velocity onto the submesh first
+        from dolfinx.fem import Function, functionspace
+        vel_space = functionspace(mesh, self.velocity_field.function_space.ufl_element())
+        vel_local = Function(vel_space)
+        vel_local.interpolate(self.velocity_field)
+
+        advective_flux = assemble_scalar(
+            fem.form(
+                u * ufl.inner(vel_local, n) * ds(self.surface.id),
+                entity_maps=entity_maps,
+            )
+        )
+
+        self.value = surface_flux + advective_flux
+        self.data.append(self.value)
 
 def findDir(basePath):
     names = []
@@ -308,7 +361,7 @@ def build_festim_model(
     elif c_inlet >= 1e22 / N_A:
         atol = 1e-03
     elif c_inlet >= 1e19 / N_A:
-        atol = 1e-05
+        atol = 1e-07
     else:
         atol = 1e-10
 
@@ -331,6 +384,8 @@ def build_festim_model(
     c_out = F.AverageSurface(
         field=T, surface=outlet, filename=f"{results_folder}/c_out.csv"
     )
+    inlet_flux = SurfaceAdvectionFlux(field=T, surface=inlet, filename=f"{results_folder}/inlet_flux.csv", velocity_field=openfoam_velocity)
+    outlet_flux = SurfaceAdvectionFlux(field=T, surface=outlet, filename=f"{results_folder}/outlet_flux.csv", velocity_field=openfoam_velocity)
     permeation_flux = F.SurfaceFlux(
         field=T, surface=vacuum, filename=f"{results_folder}/permeation_flux.csv"
     )
@@ -341,27 +396,53 @@ def build_festim_model(
         c_in,
         concentration_field_breeder,
         concentration_field_membrane,
+        inlet_flux, 
+        outlet_flux,
     ]
 
     return my_model
 
 
 if __name__ == "__main__":
-    v_in = 0.48 # m/s
-    bend_r = 0.09
-    length = 0.87
-    for c_in in [2.43e-05]:
-        my_model = build_festim_model(
-            c_inlet=c_in,
-            residual_pressure=0,
-            breeder="lipb",
-            openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{v_in:.2f}m_s_r{bend_r:.2f}_l{length:.2f}",  
-            festim_mesh_file=f"meshing/parametric_meshes/two_vol_0.0046_{bend_r:.2f}_{length:.2f}.med",
-            results_folder=f"lipb_festim_results/parametric_mesh/in_{c_in}_vel_{v_in:.2f}_r{bend_r:.2f}_l{length:.2f}",
-            penalty_term=1e-1,
-        )
+    to_run = {1.10e-02:[0.35,0.17,0.90], }
+            #   1.31e-02:[0.95,0.08,0.62],
+            #   1.49e-02:[0.60,0.03,0.78],
+            #   2.07e-03:[0.72,0.09,0.94],
+            #   2.39e-03:[8.80e-01,0.12,0.55],
+            #   2.74e-03:[4.60e-01,0.14,0.62],
+            #   3.57e-03:[7.70e-01,0.08,1.01],
+            #   3.82e-03:[5.40e-01,0.18,1.10],
+            #   4.28e-03:[6.80e-01,0.19,0.68],
+            #   5.27e-03:[9.00e-01,0.16,0.82],
+            #   5.91e-03:[3.60e-01,0.15,1.04],
+            #   6.79e-03:[8.30e-01,0.11,0.97],
+            #   8.65e-03:[4.90e-01,0.04,0.83]}
 
-        # INITIALISE AND RUN
-        my_model.initialise()
-        set_log_level(LogLevel.INFO)
-        my_model.run()
+    for c_in, lst in to_run.items():
+        for penalty_term in [1e-4]:
+            print(penalty_term)
+
+            my_model = build_festim_model(
+                c_inlet=c_in,
+                residual_pressure=0,
+                breeder="lipb",
+                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{lst[0]:.2f}m_s_r{lst[1]:.2f}_l{lst[2]:.2f}",  
+                festim_mesh_file=f"meshing/parametric_meshes/two_vol_0.0046_{lst[1]:.2f}_{lst[2]:.2f}.med",
+                results_folder=f"lipb_festim_results/small_cin/in_{c_in}_vel_{lst[0]:.2f}_r{lst[1]:.2f}_l{lst[2]:.2f}",
+                penalty_term=penalty_term,
+            )
+
+            # INITIALISE AND RUN
+            my_model.initialise()
+            set_log_level(LogLevel.INFO)
+            my_model.run()
+
+            if my_model.exports[-2].value >= my_model.exports[-1].value + my_model.exports[1].value:
+                print('mass conserved')
+                if my_model.exports[1].value < 0:
+                    print('flux negative')
+                else:
+                    break
+            else:
+                print('mass not conserved')
+
