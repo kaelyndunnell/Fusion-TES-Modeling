@@ -40,9 +40,7 @@ parser.add_argument(
 parser.add_argument(
     "--bend_radius", type=str, help="Bend radius of OpenFOAM case, in m."
 )
-parser.add_argument(
-    "--length", type=str, help="Length of OpenFOAM case, in m."
-)
+parser.add_argument("--length", type=str, help="Length of OpenFOAM case, in m.")
 
 args = parser.parse_args()
 

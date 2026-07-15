@@ -10,6 +10,7 @@ FOLDER_RE = re.compile(
     r"_(?:len_|l)(?P<l>[0-9eE+\-.]+)"
 )
 
+
 def last_value(filepath):
     last = None
     with open(filepath, newline="") as f:
@@ -22,6 +23,7 @@ def last_value(filepath):
         raise ValueError(f"No data rows found in {filepath}")
     return float(last)
 
+
 def main():
     rows_x = []
     rows_y = []
@@ -33,15 +35,17 @@ def main():
         if not m:
             continue
         c_out_path = os.path.join(folder_path, "c_out.csv")
-        flux_path  = os.path.join(folder_path, "permeation_flux.csv")
-        c_out  = last_value(c_out_path)
-        flux   = last_value(flux_path)
-        rows_x.append([
-            np.log10(float(m.group("in"))),
-            float(m.group("vel")),
-            float(m.group("r")),
-            float(m.group("l")),
-        ])
+        flux_path = os.path.join(folder_path, "permeation_flux.csv")
+        c_out = last_value(c_out_path)
+        flux = last_value(flux_path)
+        rows_x.append(
+            [
+                np.log10(float(m.group("in"))),
+                float(m.group("vel")),
+                float(m.group("r")),
+                float(m.group("l")),
+            ]
+        )
         if flux < 0 and abs(flux) < 1e-22:
             flux = abs(flux)
         rows_y.append([np.log10(c_out), np.log10(flux)])
@@ -50,15 +54,16 @@ def main():
         print("No valid simulation folders found. Nothing written.")
         return
 
-    with open('lipb_emulators/parametric_mesh/inputs.csv', "w", newline="") as f:
+    with open("lipb_emulators/parametric_mesh/inputs.csv", "w", newline="") as f:
         writer = csv.writer(f)
         # writer.writerow(["inlet_concentration", "velocity", "bend_radius", "length"])
         writer.writerows(rows_x)
 
-    with open('lipb_emulators/parametric_mesh/outputs.csv', "w", newline="") as f:
+    with open("lipb_emulators/parametric_mesh/outputs.csv", "w", newline="") as f:
         writer = csv.writer(f)
         # writer.writerow(["c_out", "permeation_flux"])
         writer.writerows(rows_y)
+
 
 if __name__ == "__main__":
     main()

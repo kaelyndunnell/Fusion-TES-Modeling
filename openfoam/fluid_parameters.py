@@ -70,7 +70,6 @@ def calculate_reynolds_number(
     reynolds_number = (inlet_velocity * characteristic_length) / kinematic_viscosity
 
     if not suppress_print:
-
         print(f"Reynolds number for {breeder} is {reynolds_number}.")
 
         if reynolds_number > 3500:
@@ -108,7 +107,6 @@ def calculate_schmidt_number(
     schmidt_number = kinematic_viscosity / diffusivity
 
     if not suppress_print:
-
         print(f"Schmidt number for {breeder} is {schmidt_number}.")
 
     return schmidt_number

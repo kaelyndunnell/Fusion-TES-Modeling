@@ -30,12 +30,13 @@ def read_openfoam_data(file_name):
     facet_meshtags = openfoam_reader.create_facet_meshtags()
     volume_meshtags = openfoam_reader.create_cell_meshtags()
 
-    return u, mesh, nut, facet_meshtags, volume_meshtags
+    return p, u, mesh, nut, facet_meshtags, volume_meshtags
 
 
-def save_openfoam_data_to_checkpoint(p, u, nut, mesh, facet_meshtags, volume_meshtags):
+def save_openfoam_data_to_checkpoint(
+    p, u, nut, mesh, facet_meshtags, volume_meshtags, checkpoint_file
+):
 
-    checkpoint_file = "test_cp.bp"
     io4dolfinx.write_mesh(checkpoint_file, mesh)
 
     io4dolfinx.write_function(checkpoint_file, u, time=0.0, name="U")
@@ -74,12 +75,4 @@ def export_openfoam_data(p, u):
 
 
 if __name__ == "__main__":
-    # read openfoam data
-    p, u, mesh, nut, facet_meshtags, volume_meshtags = read_openfoam_data(
-        "OpenFOAM/probe-case/case.foam"
-    )
-
-    # save openfoam data to checkpoint
-    save_openfoam_data_to_checkpoint(p, u, nut, mesh, facet_meshtags, volume_meshtags)
-
-    export_openfoam_data(p, u)
+    pass

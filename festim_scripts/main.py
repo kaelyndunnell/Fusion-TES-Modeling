@@ -18,6 +18,7 @@ from Nb_recombination import nb_recomb
 
 N_A = 6.0221e23  # atms/mol
 
+
 class SurfaceAdvectionFlux(F.SurfaceFlux):
     """Computes the advection flux of a field on a given surface
 
@@ -57,7 +58,10 @@ class SurfaceAdvectionFlux(F.SurfaceFlux):
 
         # Advective flux — interpolate velocity onto the submesh first
         from dolfinx.fem import Function, functionspace
-        vel_space = functionspace(mesh, self.velocity_field.function_space.ufl_element())
+
+        vel_space = functionspace(
+            mesh, self.velocity_field.function_space.ufl_element()
+        )
         vel_local = Function(vel_space)
         vel_local.interpolate(self.velocity_field)
 
@@ -70,6 +74,7 @@ class SurfaceAdvectionFlux(F.SurfaceFlux):
 
         self.value = surface_flux + advective_flux
         self.data.append(self.value)
+
 
 def findDir(basePath):
     names = []
@@ -140,9 +145,7 @@ def build_festim_model(
 
     # READ OPENFOAM MESH
     p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
-        read_openfoam_data(
-            openfoam_data_folder + "/tes.foam"
-        )
+        read_openfoam_data(openfoam_data_folder + "/tes.foam")
     )
 
     nut.x.array[nut.x.array < 0.0] = 0.0  # ensure no negative eddy viscosity
@@ -211,7 +214,7 @@ def build_festim_model(
         .mean()
     )
     breeder_solubility_law = "SIEVERT"
-    breeder_temperature = 723.15 # K from https://doi.org/10.3390/en16073022
+    breeder_temperature = 723.15  # K from https://doi.org/10.3390/en16073022
 
     # membrane material (Nb for LiPb)
 
@@ -310,13 +313,11 @@ def build_festim_model(
         vacuum,
     ]
 
-    my_model.surface_to_volume = (
-        {  # anything defined for BC needs to be here (and exports)
-            inlet: breeder,
-            outlet: breeder,
-            vacuum: membrane,
-        }
-    )
+    my_model.surface_to_volume = {  # anything defined for BC needs to be here (and exports)
+        inlet: breeder,
+        outlet: breeder,
+        vacuum: membrane,
+    }
 
     T = F.Species("T", subdomains=my_model.volume_subdomains)
     my_model.species = [T]
@@ -366,7 +367,7 @@ def build_festim_model(
         atol = 1e-10
 
     my_model.settings = F.Settings(
-        atol=atol, rtol=1e-10, transient=False, max_iterations=100 
+        atol=atol, rtol=1e-10, transient=False, max_iterations=100
     )
 
     # EXPORTS
@@ -384,8 +385,18 @@ def build_festim_model(
     c_out = F.AverageSurface(
         field=T, surface=outlet, filename=f"{results_folder}/c_out.csv"
     )
-    inlet_flux = SurfaceAdvectionFlux(field=T, surface=inlet, filename=f"{results_folder}/inlet_flux.csv", velocity_field=openfoam_velocity)
-    outlet_flux = SurfaceAdvectionFlux(field=T, surface=outlet, filename=f"{results_folder}/outlet_flux.csv", velocity_field=openfoam_velocity)
+    inlet_flux = SurfaceAdvectionFlux(
+        field=T,
+        surface=inlet,
+        filename=f"{results_folder}/inlet_flux.csv",
+        velocity_field=openfoam_velocity,
+    )
+    outlet_flux = SurfaceAdvectionFlux(
+        field=T,
+        surface=outlet,
+        filename=f"{results_folder}/outlet_flux.csv",
+        velocity_field=openfoam_velocity,
+    )
     permeation_flux = F.SurfaceFlux(
         field=T, surface=vacuum, filename=f"{results_folder}/permeation_flux.csv"
     )
@@ -396,7 +407,7 @@ def build_festim_model(
         c_in,
         concentration_field_breeder,
         concentration_field_membrane,
-        inlet_flux, 
+        inlet_flux,
         outlet_flux,
     ]
 
@@ -404,19 +415,21 @@ def build_festim_model(
 
 
 if __name__ == "__main__":
-    to_run = {1.10e-02:[0.35,0.17,0.90], }
-            #   1.31e-02:[0.95,0.08,0.62],
-            #   1.49e-02:[0.60,0.03,0.78],
-            #   2.07e-03:[0.72,0.09,0.94],
-            #   2.39e-03:[8.80e-01,0.12,0.55],
-            #   2.74e-03:[4.60e-01,0.14,0.62],
-            #   3.57e-03:[7.70e-01,0.08,1.01],
-            #   3.82e-03:[5.40e-01,0.18,1.10],
-            #   4.28e-03:[6.80e-01,0.19,0.68],
-            #   5.27e-03:[9.00e-01,0.16,0.82],
-            #   5.91e-03:[3.60e-01,0.15,1.04],
-            #   6.79e-03:[8.30e-01,0.11,0.97],
-            #   8.65e-03:[4.90e-01,0.04,0.83]}
+    to_run = {
+        1.10e-02: [0.35, 0.17, 0.90],
+    }
+    #   1.31e-02:[0.95,0.08,0.62],
+    #   1.49e-02:[0.60,0.03,0.78],
+    #   2.07e-03:[0.72,0.09,0.94],
+    #   2.39e-03:[8.80e-01,0.12,0.55],
+    #   2.74e-03:[4.60e-01,0.14,0.62],
+    #   3.57e-03:[7.70e-01,0.08,1.01],
+    #   3.82e-03:[5.40e-01,0.18,1.10],
+    #   4.28e-03:[6.80e-01,0.19,0.68],
+    #   5.27e-03:[9.00e-01,0.16,0.82],
+    #   5.91e-03:[3.60e-01,0.15,1.04],
+    #   6.79e-03:[8.30e-01,0.11,0.97],
+    #   8.65e-03:[4.90e-01,0.04,0.83]}
 
     for c_in, lst in to_run.items():
         for penalty_term in [1e-4]:
@@ -426,7 +439,7 @@ if __name__ == "__main__":
                 c_inlet=c_in,
                 residual_pressure=0,
                 breeder="lipb",
-                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{lst[0]:.2f}m_s_r{lst[1]:.2f}_l{lst[2]:.2f}",  
+                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{lst[0]:.2f}m_s_r{lst[1]:.2f}_l{lst[2]:.2f}",
                 festim_mesh_file=f"meshing/parametric_meshes/two_vol_0.0046_{lst[1]:.2f}_{lst[2]:.2f}.med",
                 results_folder=f"lipb_festim_results/small_cin/in_{c_in}_vel_{lst[0]:.2f}_r{lst[1]:.2f}_l{lst[2]:.2f}",
                 penalty_term=penalty_term,
@@ -437,12 +450,14 @@ if __name__ == "__main__":
             set_log_level(LogLevel.INFO)
             my_model.run()
 
-            if my_model.exports[-2].value >= my_model.exports[-1].value + my_model.exports[1].value:
-                print('mass conserved')
+            if (
+                my_model.exports[-2].value
+                >= my_model.exports[-1].value + my_model.exports[1].value
+            ):
+                print("mass conserved")
                 if my_model.exports[1].value < 0:
-                    print('flux negative')
+                    print("flux negative")
                 else:
                     break
             else:
-                print('mass not conserved')
-
+                print("mass not conserved")

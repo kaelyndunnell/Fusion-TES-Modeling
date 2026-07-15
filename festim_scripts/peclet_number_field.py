@@ -18,7 +18,8 @@ sys.path.append(parent_dir)
 # script from James Dark, needs adapting
 
 p, u, mesh, nut, facet_meshtags, volume_meshtags = read_openfoam_data(
-    parent_dir+"/openfoam/velocity_parametrization/lipb/pipe_0.33m_s_r0.04_l0.90/tes.foam"
+    parent_dir
+    + "/openfoam/velocity_parametrization/lipb/pipe_0.33m_s_r0.04_l0.90/tes.foam"
 )
 
 T = 603.15  # K

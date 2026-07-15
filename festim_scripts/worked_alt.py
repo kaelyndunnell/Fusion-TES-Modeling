@@ -1,4 +1,4 @@
-import festim as F 
+import festim as F
 import numpy as np
 from dolfinx import fem
 from scifem import assemble_scalar
@@ -151,7 +151,9 @@ def build_festim_model(
         print(f"Results folder: {results_folder}")
 
     # READ OPENFOAM MESH
-    if os.path.isdir(f"{results_folder}/openfoam_checkpoint.bp"): # check if checkpointing file exists
+    if os.path.isdir(
+        f"{results_folder}/openfoam_checkpoint.bp"
+    ):  # check if checkpointing file exists
         checkpoint_file = Path(f"{results_folder}/openfoam_checkpoint.bp")
         openfoam_mesh = io4dolfinx.read_mesh(checkpoint_file, MPI.COMM_WORLD)
     else:
@@ -159,10 +161,20 @@ def build_festim_model(
             read_openfoam_data(openfoam_data_folder + "/tes.foam")
         )
         # save openfoam data to checkpoint file
-        save_openfoam_data_to_checkpoint(p, openfoam_velocity, nut, openfoam_mesh, facet_meshtags, volume_meshtags, checkpoint_file=f'{results_folder}/openfoam_checkpoint.bp')
+        save_openfoam_data_to_checkpoint(
+            p,
+            openfoam_velocity,
+            nut,
+            openfoam_mesh,
+            facet_meshtags,
+            volume_meshtags,
+            checkpoint_file=f"{results_folder}/openfoam_checkpoint.bp",
+        )
 
     # READ FESTIM MESH
-    if os.path.isdir(f"{results_folder}/mesh_domains.xdmf"): # if domains exist, boundaries.xdmf also exists
+    if os.path.isdir(
+        f"{results_folder}/mesh_domains.xdmf"
+    ):  # if domains exist, boundaries.xdmf also exists
         pass
     else:
         correspondance_dict, cell_data_types = convert_med_to_xdmf(
@@ -331,7 +343,6 @@ def build_festim_model(
         filename=f"{results_folder}/outlet_flux.csv",
     )
 
-
     concentration_field_breeder = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_breeder.bp", field=T, subdomain=breeder
     )
@@ -359,9 +370,8 @@ if __name__ == "__main__":
         1.00e0: [1.93, 0.14, 1.71],
     }
 
-    for c_in, lst in to_run.items(): 
+    for c_in, lst in to_run.items():
         for penalty_term in [1e10]:
-
             my_model = build_festim_model(
                 breeder="lipb",
                 openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{lst[0]:.2f}m_s_r{lst[1]:.2f}_l{lst[2]:.2f}",
