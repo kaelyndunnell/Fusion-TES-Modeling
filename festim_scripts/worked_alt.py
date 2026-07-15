@@ -1,21 +1,15 @@
-import festim as F  # using festim2
+import festim as F 
 import numpy as np
 from dolfinx import fem
 from scifem import assemble_scalar
-from dolfinx.io import VTXWriter
 import ufl
 from dolfinx import cpp as _cpp
-from openfoam_to_festim import read_openfoam_data
+from openfoam_to_festim import read_openfoam_data, save_openfoam_data_to_checkpoint
 from dolfinx.log import set_log_level, LogLevel
-from dolfinx.io import gmsh as gmshio
 from mpi4py import MPI
 from basix.ufl import element
-import h_transport_materials as htm
 import os
-import re
 import meshio
-from Nb_recombination import nb_recomb
-from festim.helpers import nmm_interpolate
 from pathlib import Path
 import io4dolfinx
 
@@ -157,19 +151,28 @@ def build_festim_model(
         print(f"Results folder: {results_folder}")
 
     # READ OPENFOAM MESH
-    # openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
-    #     read_openfoam_data(openfoam_data_folder + "/tes.foam")
-    # )
+    if os.path.isdir(f"{results_folder}/openfoam_checkpoint.bp"): # check if checkpointing file exists
+        checkpoint_file = Path(f"{results_folder}/openfoam_checkpoint.bp")
+        openfoam_mesh = io4dolfinx.read_mesh(checkpoint_file, MPI.COMM_WORLD)
+    else:
+        p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
+            read_openfoam_data(openfoam_data_folder + "/tes.foam")
+        )
+        # save openfoam data to checkpoint file
+        save_openfoam_data_to_checkpoint(p, openfoam_velocity, nut, openfoam_mesh, facet_meshtags, volume_meshtags, checkpoint_file=f'{results_folder}/openfoam_checkpoint.bp')
 
     # READ FESTIM MESH
-    # correspondance_dict, cell_data_types = convert_med_to_xdmf(
-    #     festim_mesh_file,
-    #     cell_file=f"{results_folder}/mesh_domains.xdmf",
-    #     facet_file=f"{results_folder}/mesh_boundaries.xdmf",
-    # )
+    if os.path.isdir(f"{results_folder}/mesh_domains.xdmf"): # if domains exist, boundaries.xdmf also exists
+        pass
+    else:
+        correspondance_dict, cell_data_types = convert_med_to_xdmf(
+            festim_mesh_file,
+            cell_file=f"{results_folder}/mesh_domains.xdmf",
+            facet_file=f"{results_folder}/mesh_boundaries.xdmf",
+        )
 
-    # for index, label in correspondance_dict.items():
-    #     print(f"{index}: {label[0]}")
+        for index, label in correspondance_dict.items():
+            print(f"{index}: {label[0]}")
 
     festim_mesh = F.MeshFromXDMF(
         volume_file=f"{results_folder}/mesh_domains.xdmf",
@@ -186,9 +189,6 @@ def build_festim_model(
     mesh = my_model.mesh.mesh
     my_model.facet_meshtags = festim_mesh.define_surface_meshtags()
     my_model.volume_meshtags = festim_mesh.define_volume_meshtags()
-
-    checkpoint_file = Path("test_cp.bp")
-    openfoam_mesh = io4dolfinx.read_mesh(checkpoint_file, MPI.COMM_WORLD)
 
     # interpolate OpenFOAM velocity field onto FESTIM mesh
     el = element(
@@ -211,9 +211,6 @@ def build_festim_model(
 
     nut.x.array[nut.x.array < 0.0] = 0.0  # ensure no negative eddy viscosity
 
-    # u_openfoam = fem.Function(V_openfoam)
-    # u_openfoam.interpolate(openfoam_velocity)
-
     u_openfoam = openfoam_velocity
     V_openfoam = u_openfoam.function_space
 
@@ -228,8 +225,6 @@ def build_festim_model(
     festim_velocity.interpolate_nonmatching(
         u_openfoam, cells=festim_cells, interpolation_data=interpolation_data
     )
-
-    # my_model.method_interface = F.InterfaceMethod.penalty
 
     D_diff = 1e-4 * ufl.exp(-0 / (F.k_B * 723))
 
@@ -313,7 +308,7 @@ def build_festim_model(
 
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(subdomain=inlet, value=1, species=T),
-        # F.FixedConcentrationBC(subdomain=vacuum, value=0, species=T),
+        F.FixedConcentrationBC(subdomain=vacuum, value=0, species=T),
     ]
 
     # SETTINGS
@@ -336,8 +331,6 @@ def build_festim_model(
         filename=f"{results_folder}/outlet_flux.csv",
     )
 
-    # inlet_flux = F.SurfaceFlux(field=T, surface=inlet)
-    # outlet_flux = F.SurfaceFlux(field=T, surface=outlet)
 
     concentration_field_breeder = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_breeder.bp", field=T, subdomain=breeder
@@ -366,9 +359,8 @@ if __name__ == "__main__":
         1.00e0: [1.93, 0.14, 1.71],
     }
 
-    for c_in, lst in to_run.items():  # 1e7 with lower tols is closest i've gotten
+    for c_in, lst in to_run.items(): 
         for penalty_term in [1e10]:
-            print(penalty_term)
 
             my_model = build_festim_model(
                 breeder="lipb",
@@ -379,17 +371,9 @@ if __name__ == "__main__":
             )
 
             # INITIALISE AND RUN
-            # my_model.initialise()
-            # set_log_level(LogLevel.INFO)
-            # my_model.run()
-            # print(f"inlet flux is {my_model.exports[1].value}")
-            # print(f"outlet flux is {my_model.exports[2].value}")
-            # print(f"permeation flux is {my_model.exports[0].value}")
-            # if abs(my_model.exports[1].value) >= my_model.exports[2].value + my_model.exports[0].value:
-            #     print('mass conserved')
-            #     if my_model.exports[0].value < 0:
-            #         print('flux negative')
-            #     else:
-            #         break
-            # else:
-            #     print('mass not conserved')
+            my_model.initialise()
+            set_log_level(LogLevel.INFO)
+            my_model.run()
+            print(f"inlet flux is {my_model.exports[1].value}")
+            print(f"outlet flux is {my_model.exports[2].value}")
+            print(f"permeation flux is {my_model.exports[0].value}")
