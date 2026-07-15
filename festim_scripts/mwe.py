@@ -19,6 +19,7 @@ from festim.helpers import nmm_interpolate
 
 N_A = 6.0221e23  # atms/mol
 
+
 class SurfaceAdvectionFlux(F.SurfaceFlux):
     """Computes the advection flux of a field on a given surface
 
@@ -112,6 +113,7 @@ def convert_med_to_xdmf(
 
     return correspondance_dict, cell_data_types
 
+
 def evaluate_stabalisation_term(mesh, u, delta):
     """See more at https://www.comsol.com/blogs/understanding-stabilization-methods"""
 
@@ -152,9 +154,7 @@ def build_festim_model(
 
     # READ OPENFOAM MESH
     p, openfoam_velocity, openfoam_mesh, nut, facet_meshtags, volume_meshtags = (
-        read_openfoam_data(
-            openfoam_data_folder + "/tes.foam"
-        )
+        read_openfoam_data(openfoam_data_folder + "/tes.foam")
     )
 
     nut.x.array[nut.x.array < 0.0] = 0.0  # ensure no negative eddy viscosity
@@ -185,7 +185,7 @@ def build_festim_model(
     my_model.facet_meshtags = festim_mesh.define_surface_meshtags()
     my_model.volume_meshtags = festim_mesh.define_volume_meshtags()
 
-    # interpolate OpenFOAM velocity field onto FESTIM mesh 
+    # interpolate OpenFOAM velocity field onto FESTIM mesh
     el = element(
         "Lagrange",
         mesh.topology.cell_name(),
@@ -240,7 +240,7 @@ def build_festim_model(
         .mean()
     )
     breeder_solubility_law = "SIEVERT"
-    breeder_temperature = 723.15 # K from https://doi.org/10.3390/en16073022
+    breeder_temperature = 723.15  # K from https://doi.org/10.3390/en16073022
 
     # membrane material (Nb for LiPb)
 
@@ -267,12 +267,10 @@ def build_festim_model(
     Sc = 0.7
     D_turb = festim_nut / Sc
 
-     # add stabilization term for diffusion
-    D_art = evaluate_stabalisation_term(
-        mesh=mesh, u=festim_velocity, delta=0.1
-    )
+    # add stabilization term for diffusion
+    D_art = evaluate_stabalisation_term(mesh=mesh, u=festim_velocity, delta=0.1)
 
-    D_expr = D_fick + D_turb # + D_art
+    D_expr = D_fick + D_turb  # + D_art
     V = fem.functionspace(mesh, ("CG", 1))
     D_tot = fem.Function(V)
     D_tot.interpolate(fem.Expression(D_expr, V.element.interpolation_points))
@@ -348,14 +346,12 @@ def build_festim_model(
         vacuum,
     ]
 
-    my_model.surface_to_volume = (
-        {  # anything defined for BC needs to be here (and exports)
-            inlet: breeder,
-            outlet: breeder,
-            vacuum: membrane,
-            walls: membrane,
-        }
-    )
+    my_model.surface_to_volume = {  # anything defined for BC needs to be here (and exports)
+        inlet: breeder,
+        outlet: breeder,
+        vacuum: membrane,
+        walls: membrane,
+    }
 
     T = F.Species("T", subdomains=my_model.volume_subdomains)
     my_model.species = [T]
@@ -372,12 +368,10 @@ def build_festim_model(
 
     # SET TEMP AND BOUNDARY CONDITIONS
 
-    advection = F.AdvectionTerm(
-        velocity=festim_velocity, subdomain=breeder, species=T
-    )
+    advection = F.AdvectionTerm(velocity=festim_velocity, subdomain=breeder, species=T)
     my_model.advection_terms = [advection]
 
-    my_model.temperature = 723 # K
+    my_model.temperature = 723  # K
 
     vacuum_TT_rxn = F.SurfaceReactionBC(
         reactant=[T, T],
@@ -392,18 +386,28 @@ def build_festim_model(
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(subdomain=inlet, value=1, species=T),
         # F.FixedConcentrationBC(subdomain=vacuum, value=0, species=T),
-        vacuum_TT_rxn
+        vacuum_TT_rxn,
     ]
 
     # SETTINGS
     my_model.settings = F.Settings(
-        atol=1e-20, rtol=1e-9, transient=False, max_iterations=100 
+        atol=1e-20, rtol=1e-9, transient=False, max_iterations=100
     )
 
     # EXPORTS
 
-    inlet_flux = SurfaceAdvectionFlux(field=T, surface=inlet, velocity_field=festim_velocity, filename=f"{results_folder}/inlet_flux.csv")
-    outlet_flux = SurfaceAdvectionFlux(field=T, surface=outlet, velocity_field=festim_velocity, filename=f"{results_folder}/outlet_flux.csv")
+    inlet_flux = SurfaceAdvectionFlux(
+        field=T,
+        surface=inlet,
+        velocity_field=festim_velocity,
+        filename=f"{results_folder}/inlet_flux.csv",
+    )
+    outlet_flux = SurfaceAdvectionFlux(
+        field=T,
+        surface=outlet,
+        velocity_field=festim_velocity,
+        filename=f"{results_folder}/outlet_flux.csv",
+    )
 
     concentration_field_breeder = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_breeder.bp", field=T, subdomain=breeder
@@ -411,7 +415,7 @@ def build_festim_model(
     concentration_field_membrane = F.VTXSpeciesExport(
         filename=f"{results_folder}/T_membrane.bp", field=T, subdomain=membrane
     )
-    
+
     permeation_flux = F.SurfaceFlux(
         field=T, surface=vacuum, filename=f"{results_folder}/permeation_flux.csv"
     )
@@ -425,27 +429,29 @@ def build_festim_model(
 
     my_model.exports = [
         permeation_flux,
-        inlet_flux, 
+        inlet_flux,
         outlet_flux,
-        concentration_field_breeder, 
+        concentration_field_breeder,
         concentration_field_membrane,
-        c_in, 
-        c_out
+        c_in,
+        c_out,
     ]
 
     return my_model
 
 
 if __name__ == "__main__":
-    to_run = {0.0149:[0.60,0.03,0.78], }
+    to_run = {
+        1.00e0: [1.93, 0.14, 1.71],
+    }
 
-    for c_in, lst in to_run.items(): 
+    for c_in, lst in to_run.items():
         for penalty_term in [1e7]:
             print(penalty_term)
 
             my_model = build_festim_model(
                 breeder="lipb",
-                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{lst[0]:.2f}m_s_r{lst[1]:.2f}_l{lst[2]:.2f}",  
+                openfoam_data_folder=f"openfoam/velocity_parametrization/lipb/pipe_{lst[0]:.2f}m_s_r{lst[1]:.2f}_l{lst[2]:.2f}",
                 festim_mesh_file=f"meshing/parametric_meshes/two_vol_0.0046_{lst[1]:.2f}_{lst[2]:.2f}.med",
                 results_folder=f"lipb_festim_results/test/in_{c_in}_vel_{lst[0]:.2f}_r{lst[1]:.2f}_l{lst[2]:.2f}",
                 penalty_term=penalty_term,
@@ -455,9 +461,9 @@ if __name__ == "__main__":
             my_model.initialise()
             set_log_level(LogLevel.INFO)
             my_model.run()
-            print(f'inlet flux is {my_model.exports[1].value}')
-            print(f'outlet flux is {my_model.exports[2].value}')
-            print(f'permeation flux is {my_model.exports[0].value}')
+            print(f"inlet flux is {my_model.exports[1].value}")
+            print(f"outlet flux is {my_model.exports[2].value}")
+            print(f"permeation flux is {my_model.exports[0].value}")
             # if abs(my_model.exports[1].value) >= my_model.exports[2].value + my_model.exports[0].value:
             #     print('mass conserved')
             #     if my_model.exports[0].value < 0:
@@ -466,4 +472,3 @@ if __name__ == "__main__":
             #         break
             # else:
             #     print('mass not conserved')
-
