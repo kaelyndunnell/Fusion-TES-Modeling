@@ -14,6 +14,7 @@ test/
 lipb_new/
 parametric_meshes/
 lipb_emulators/
+*.ruff_cache
 
 # User-specific files
 *.rsuser

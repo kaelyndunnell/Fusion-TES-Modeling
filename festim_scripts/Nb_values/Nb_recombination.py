@@ -2,7 +2,7 @@ import h_transport_materials as htm
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("festim_scripts/Nb_recombo_data.csv")
+df = pd.read_csv("festim_scripts/Nb_values/Nb_recombo_data.csv")
 
 df["1/T"] = df.iloc[:, 0]
 df["T"] = 1 / df["1/T"]

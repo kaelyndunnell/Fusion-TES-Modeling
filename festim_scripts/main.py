@@ -14,7 +14,7 @@ import h_transport_materials as htm
 import os
 import re
 import meshio
-from Nb_recombination import nb_recomb
+from Nb_values.Nb_recombination import nb_recomb
 
 N_A = 6.0221e23  # atms/mol
 
