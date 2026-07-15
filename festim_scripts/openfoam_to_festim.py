@@ -13,7 +13,7 @@ def read_openfoam_data(file_name):
 
     final_time = max(openfoam_reader.times)
 
-    # p = openfoam_reader.create_dolfinx_function_with_cell_data(t=final_time, name="p")
+    p = openfoam_reader.create_dolfinx_function_with_cell_data(t=final_time, name="p")
     u = openfoam_reader.create_dolfinx_function_with_cell_data(t=final_time, name="U")
     mesh = openfoam_reader.dolfinx_meshes_dict["default"]
 
@@ -30,10 +30,16 @@ def read_openfoam_data(file_name):
     facet_meshtags = openfoam_reader.create_facet_meshtags()
     volume_meshtags = openfoam_reader.create_cell_meshtags()
 
+    return u, mesh, nut, facet_meshtags, volume_meshtags
+
+
+def save_openfoam_data_to_checkpoint(p, u, nut, mesh, facet_meshtags, volume_meshtags):
+
     checkpoint_file = "test_cp.bp"
     io4dolfinx.write_mesh(checkpoint_file, mesh)
 
     io4dolfinx.write_function(checkpoint_file, u, time=0.0, name="U")
+    io4dolfinx.write_function(checkpoint_file, p, time=0.0, name="p")
     io4dolfinx.write_function(checkpoint_file, nut, time=0.0, name="nut")
 
     io4dolfinx.write_meshtags(
@@ -42,8 +48,6 @@ def read_openfoam_data(file_name):
     io4dolfinx.write_meshtags(
         checkpoint_file, mesh, volume_meshtags, meshtag_name="cell_tags"
     )
-
-    return u, mesh, nut, facet_meshtags, volume_meshtags
 
 
 def export_openfoam_data(p, u):
@@ -74,5 +78,8 @@ if __name__ == "__main__":
     p, u, mesh, nut, facet_meshtags, volume_meshtags = read_openfoam_data(
         "OpenFOAM/probe-case/case.foam"
     )
+
+    # save openfoam data to checkpoint
+    save_openfoam_data_to_checkpoint(p, u, nut, mesh, facet_meshtags, volume_meshtags)
 
     export_openfoam_data(p, u)
